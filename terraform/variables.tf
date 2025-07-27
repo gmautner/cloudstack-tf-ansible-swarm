@@ -39,4 +39,4 @@ variable "workers" {
     plan         = string
     data_size_gb = number
   }))
-} 
+}
