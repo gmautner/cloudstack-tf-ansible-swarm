@@ -16,23 +16,30 @@ provider "cloudstack" {
 
 # Data sources for CloudStack resources
 data "cloudstack_zone" "main" {
-  name = "ZP01"
+  filter {
+    name  = "name"
+    value = "ZP01"
+  }
 }
 
 data "cloudstack_zone" "backup" {
-  name = "ZP02"
+  filter {
+    name  = "name"
+    value = "ZP02"
+  }
 }
 
 data "cloudstack_network_offering" "main" {
-  name = var.network_offering_name
+  filter {
+    name  = "name"
+    value = var.network_offering_name
+  }
 }
 
 data "cloudstack_template" "main" {
   template_filter = "featured"
-  name            = var.template_name
-  zone_id         = data.cloudstack_zone.main.id
-}
-
-data "cloudstack_disk_offering" "data" {
-  name = var.disk_offering_name
+  filter {
+    name  = "name"
+    value = var.template_name
+  }
 } 

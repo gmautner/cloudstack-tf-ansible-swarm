@@ -21,7 +21,7 @@ resource "cloudstack_disk" "manager_data" {
 
   name               = "manager-${count.index + 1}-data"
   attach             = true
-  disk_offering      = data.cloudstack_disk_offering.data.id
+  disk_offering      = var.disk_offering_name
   size               = 50
   virtual_machine_id = cloudstack_instance.managers[count.index].id
   zone               = data.cloudstack_zone.main.name
@@ -50,7 +50,7 @@ resource "cloudstack_disk" "worker_data" {
 
   name               = "${var.workers[count.index].name}-data"
   attach             = true
-  disk_offering      = data.cloudstack_disk_offering.data.id
+  disk_offering      = var.disk_offering_name
   size               = var.workers[count.index].data_size_gb
   virtual_machine_id = cloudstack_instance.workers[count.index].id
   zone               = data.cloudstack_zone.main.name

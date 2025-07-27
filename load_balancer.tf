@@ -25,22 +25,26 @@ resource "cloudstack_loadbalancer_rule" "https" {
 resource "cloudstack_port_forward" "manager_ssh" {
   count = 3
 
-  ip_address_id      = cloudstack_ipaddress.main.id
-  forward            = "tcp"
-  protocol           = "tcp"
-  public_port        = 22001 + count.index
-  private_port       = 22
-  virtual_machine_id = cloudstack_instance.managers[count.index].id
+  ip_address_id = cloudstack_ipaddress.main.id
+
+  forward {
+    protocol           = "tcp"
+    public_port        = 22001 + count.index
+    private_port       = 22
+    virtual_machine_id = cloudstack_instance.managers[count.index].id
+  }
 }
 
 # Port forwarding rules for SSH access to workers (starting at 22004)
 resource "cloudstack_port_forward" "worker_ssh" {
   count = length(var.workers)
 
-  ip_address_id      = cloudstack_ipaddress.main.id
-  forward            = "tcp"
-  protocol           = "tcp"
-  public_port        = 22004 + count.index
-  private_port       = 22
-  virtual_machine_id = cloudstack_instance.workers[count.index].id
+  ip_address_id = cloudstack_ipaddress.main.id
+
+  forward {
+    protocol           = "tcp"
+    public_port        = 22004 + count.index
+    private_port       = 22
+    virtual_machine_id = cloudstack_instance.workers[count.index].id
+  }
 } 
