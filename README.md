@@ -32,14 +32,20 @@ export WORDPRESS_DB_PASSWORD="senha-wordpress-segura"
 
 ### 2. Configurar Variáveis do Terraform
 
+Copie o arquivo de exemplo e edite as variáveis em `terraform/terraform.tfvars`:
+
 ```bash
-cp terraform.tfvars.example terraform.tfvars
-# Edite terraform.tfvars com sua chave pública SSH e domínio
+cp terraform/terraform.tfvars.example terraform/terraform.tfvars
+# Edite terraform/terraform.tfvars com sua chave pública SSH e domínio
 ```
 
 ### 3. Implantar Infraestrutura
 
+Execute os comandos do Terraform dentro do diretório `terraform`:
+
 ```bash
+cd terraform
+
 # Validar Terraform
 terraform validate
 
@@ -59,12 +65,14 @@ Aponte o DNS wildcard do seu domínio (`*.seudominio.com`) para o IP público mo
 
 ### 5. Implantar Docker Swarm e Aplicações
 
+O inventário do Ansible é gerado automaticamente pelo Terraform em `ansible/inventory.ini`.
+
 ```bash
 # Instalar dependências do Ansible
-ansible-galaxy collection install -r collections/requirements.yml
+ansible-galaxy collection install -r ansible/collections/requirements.yml
 
 # Implantar Docker Swarm
-ansible-playbook -i inventory.ini playbook.yml
+ansible-playbook -i ansible/inventory.ini ansible/playbook.yml
 ```
 
 ## Configuração
@@ -79,7 +87,7 @@ ansible-playbook -i inventory.ini playbook.yml
 | `template_name` | Nome do template do SO | `"Ubuntu 24.04 (Noble Numbat)"` |
 | `disk_offering_name` | Oferta de disco de dados | `"data.disk.general"` |
 | `allowed_ssh_cidr_blocks` | Restrição de acesso SSH | `["0.0.0.0/0"]` |
-| `workers` | Configuração dos nós worker | Veja `variables.tf` |
+| `workers` | Configuração dos nós worker | Veja `terraform/variables.tf` |
 
 ### Acesso à Rede
 
@@ -102,9 +110,9 @@ Após a implantação, os seguintes serviços estarão disponíveis:
 
 ### Estado do Terraform
 
-Por padrão, o Terraform armazena o estado da infraestrutura em um arquivo local `terraform.tfstate`. Este arquivo contém informações sensíveis e **não deve ser commitado no controle de versão**.
+Por padrão, o Terraform armazena o estado da infraestrutura em um arquivo local `terraform/terraform.tfstate`. Este arquivo contém informações sensíveis e **não deve ser commitado no controle de versão**.
 
-Para colaboração ou uso em produção, configure um backend remoto:
+Para colaboração ou uso em produção, configure um backend remoto no arquivo `terraform/main.tf`:
 
 ```hcl
 terraform {
@@ -120,8 +128,8 @@ terraform {
 
 Para garantir implantações consistentes, este projeto trava as versões das dependências:
 
-- **Terraform**: Versão do provider CloudStack fixada em `main.tf`
-- **Ansible**: Versões das coleções especificadas em `collections/requirements.yml`
+- **Terraform**: Versão do provider CloudStack fixada em `terraform/main.tf`
+- **Ansible**: Versões das coleções especificadas em `ansible/collections/requirements.yml`
 
 ## Persistência de Dados
 
@@ -157,6 +165,7 @@ docker service logs <nome-do-servico>
 
 ```bash
 # Destruir toda a infraestrutura
+cd terraform
 terraform destroy
 ```
 

@@ -31,5 +31,5 @@ resource "local_file" "ansible_inventory" {
     ]
     domain_suffix = var.domain_suffix
   })
-  filename = "${path.module}/inventory.ini"
+  filename = "${path.module}/../ansible/inventory.ini"
 } 
