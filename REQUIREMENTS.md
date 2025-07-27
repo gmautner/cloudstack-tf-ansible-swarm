@@ -54,14 +54,19 @@ At the end, create an Ansible inventory, with groups for managers and workers an
 
 ### Ansible
 
+#### General Setup
+
+- The playbook should use the inventory file created by Terraform above.
+- On each manager and worker node, the attached data disk (e.g., `/dev/vdb`) must be formatted with the `ext4` filesystem and mounted at `/data`. Ansible should ensure this mount is persistent by adding an entry to `/etc/fstab`.
+- An initial `apt update` and `apt upgrade` should be run on each node.
+- Ensure that Ubuntu's unattended upgrades are enabled on all nodes.
+
 #### Docker Swarm
 
 Create an Ansible playbook to install Docker Swarm. Use the module at <https://docs.ansible.com/ansible/latest/collections/community/docker/docker_swarm_module.html>. Pay attention to the requirements both at the client and at the target.
 
-- The playbook should use the inventory file created by Terraform above.
 - Install Docker Swarm, following the roles of managers and workers.
 - The first manager should be the leader. Gather its token with Ansible facts and use it to join the other managers and workers.
-- On each manager and worker node, the attached data disk (e.g., `/dev/vdb`) must be formatted with the `ext4` filesystem and mounted at `/data`. Ansible should ensure this mount is persistent by adding an entry to `/etc/fstab`.
 
 #### Stacks
 
