@@ -7,31 +7,6 @@
     data_mount_point: /data
   
   tasks:
-    - name: Update and upgrade packages
-      apt:
-        update_cache: true
-        upgrade: dist
-        autoremove: true
-
-    - name: Install required packages
-      apt:
-        name:
-          - unattended-upgrades
-          - ca-certificates
-          - curl
-          - gnupg
-          - python3-pip
-        update_cache: true
-
-    - name: Enable unattended upgrades
-      copy:
-        content: |
-          APT::Periodic::Update-Package-Lists "1";
-          APT::Periodic::Download-Upgradeable-Packages "1";
-          APT::Periodic::AutocleanInterval "7";
-          APT::Periodic::Unattended-Upgrade "1";
-        dest: /etc/apt/apt.conf.d/20auto-upgrades
-
     - name: Check if data disk exists
       stat:
         path: "{{ data_disk_device }}"
@@ -57,6 +32,45 @@
         state: mounted
       when: data_disk.stat.exists
 
+    # FIX enquanto houver problema GRUB
+    - name: Configure GRUB to install to main disk automatically
+      debconf:
+        name: grub-pc
+        question: grub-pc/install_devices
+        value: /dev/vda
+        vtype: multiselect
+
+    - name: Configure GRUB to not prompt for device selection
+      debconf:
+        name: grub-pc
+        question: grub-pc/install_devices_empty
+        value: 'false'
+        vtype: boolean
+
+    - name: Update and upgrade packages
+      apt:
+        update_cache: true
+        upgrade: yes
+      environment:
+        DEBIAN_FRONTEND: noninteractive
+
+    - name: Install required packages
+      apt:
+        name:
+          - unattended-upgrades
+          - ca-certificates
+          - curl
+          - gnupg
+          - python3-pip
+        update_cache: true
+
+    - name: Enable unattended upgrades
+      copy:
+        content: |
+          APT::Periodic::Update-Package-Lists "1";
+          APT::Periodic::Unattended-Upgrade "1";
+        dest: /etc/apt/apt.conf.d/20auto-upgrades
+
     - name: Add Docker GPG key
       apt_key:
         url: https://download.docker.com/linux/ubuntu/gpg
@@ -81,8 +95,9 @@
         enabled: true
 
     - name: Install Docker Python module
-      pip:
-        name: docker
+      apt:
+        name: python3-docker
+        update_cache: true
 
 - name: Initialize Docker Swarm
   hosts: managers[0]
