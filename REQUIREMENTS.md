@@ -92,9 +92,11 @@ Then, create and deploy a stack with WordPress and MySQL.
 
 ## Notes
 
-This code is meant to be used as a reference for developers. Therefore, it should be extremely concise, readable, well commented, and with an easy to follow, no-frills README.md companion. The `README.md` should contain clear instructions and also explain the following points:
+This code is meant to be used as a reference for developers. Therefore, it should be extremely concise, readable, well commented, and with an easy to follow, no-frills `README.md` companion. The `README.md` should contain clear instructions and also explain the following points:
 
 - **Terraform State**: Explain that by default, Terraform stores the infrastructure state in a local `terraform.tfstate` file. This file contains sensitive information and must not be committed to version control. For collaboration or production use, it is highly recommended to configure a remote backend (e.g., S3, Terraform Cloud).
 - **Dependency Versioning**: To ensure consistent deployments, the project should lock the versions of its dependencies.
   - For Terraform, this should be done using a `required_providers` block to pin the version of the CloudStack provider.
   - For Ansible, a `collections/requirements.yml` file should be used to specify versions for any used collections, like `community.docker`.
+
+Also, the `README.md` should be written in Brazilian Portuguese.
