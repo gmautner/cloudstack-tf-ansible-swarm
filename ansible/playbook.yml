@@ -145,6 +145,12 @@
   vars:
     stacks_directory: "{{ playbook_dir }}/stacks"
   tasks:
+    - name: Install python3-jsondiff for stack management
+      apt:
+        name: python3-jsondiff
+        state: present
+        update_cache: true
+
     - name: Load secrets configuration
       include_vars:
         file: "{{ playbook_dir }}/secrets/secrets.yaml"
@@ -175,11 +181,25 @@
       become: false
       register: stack_files
 
+    - name: Create stacks directory on manager
+      file:
+        path: /tmp/stacks
+        state: directory
+        mode: '0755'
+
+    - name: Copy stack files to manager with template processing
+      template:
+        src: "{{ item.path }}"
+        dest: "/tmp/stacks/{{ item.path | basename }}"
+        mode: '0644'
+      with_items: "{{ stack_files.files }}"
+      when: stack_files.files | length > 0
+
     - name: Deploy each stack
       community.docker.docker_stack:
         name: "{{ item.path | basename | splitext | first }}"
         compose:
-          - "{{ item.path }}"
+          - "/tmp/stacks/{{ item.path | basename }}"
         state: present
       with_items: "{{ stack_files.files }}"
       when: stack_files.files | length > 0

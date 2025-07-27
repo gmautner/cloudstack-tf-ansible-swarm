@@ -9,10 +9,9 @@ services:
     command:
       - --api.dashboard=true
       - --api.insecure=false
-      - --providers.docker=true
-      - --providers.docker.swarmmode=true
-      - --providers.docker.exposedbydefault=false
-      - --providers.docker.network=app-network
+      - --providers.swarm=true
+      - --providers.swarm.exposedbydefault=false
+      - --providers.swarm.network=app-network
       - --entrypoints.web.address=:80
       - --entrypoints.websecure.address=:443
       - --certificatesresolvers.letsencrypt.acme.tlschallenge=true
@@ -46,7 +45,7 @@ services:
       MYSQL_USER: wordpress
       MYSQL_PASSWORD_FILE: /run/secrets/wordpress_db_password
     volumes:
-      - /data/mysql:/var/lib/mysql
+      - /data:/var/lib/mysql
     networks:
       - app-network
     secrets:
@@ -65,7 +64,7 @@ services:
       WORDPRESS_DB_USER: wordpress
       WORDPRESS_DB_PASSWORD_FILE: /run/secrets/wordpress_db_password
     volumes:
-      - /data/wp:/var/www/html
+      - /data:/var/www/html
     networks:
       - app-network
     secrets:
