@@ -46,11 +46,11 @@ Execute os comandos do Terraform dentro do diretório `terraform`:
 ```bash
 cd terraform
 
-# Validar Terraform
-terraform validate
-
 # Inicializar Terraform
 terraform init
+
+# Validar Terraform
+terraform validate
 
 # Planejar implantação
 terraform plan
