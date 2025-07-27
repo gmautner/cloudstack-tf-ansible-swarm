@@ -68,11 +68,13 @@ Aponte o DNS wildcard do seu domínio (`*.seudominio.com`) para o IP público mo
 O inventário do Ansible é gerado automaticamente pelo Terraform em `ansible/inventory.ini`.
 
 ```bash
+cd ansible
+
 # Instalar dependências do Ansible
-ansible-galaxy collection install -r ansible/collections/requirements.yml
+ansible-galaxy collection install -r collections/requirements.yml
 
 # Implantar Docker Swarm
-ansible-playbook -i ansible/inventory.ini ansible/playbook.yml
+ansible-playbook -i inventory.ini playbook.yml
 ```
 
 ## Configuração

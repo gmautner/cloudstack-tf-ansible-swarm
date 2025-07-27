@@ -1,7 +1,127 @@
 ---
-- hosts: all
+- name: Setup Docker Swarm Infrastructure
+  hosts: all
   become: true
-  gather_facts: true
-  roles: []
-    # Adicione roles do Ansible aqui
-    # Ex: - role: geerlingguy.docker 
+  vars:
+    data_disk_device: /dev/vdb
+    data_mount_point: /data
+  
+  tasks:
+    - name: Update and upgrade packages
+      apt:
+        update_cache: true
+        upgrade: dist
+        autoremove: true
+
+    - name: Install required packages
+      apt:
+        name:
+          - unattended-upgrades
+          - ca-certificates
+          - curl
+          - gnupg
+          - python3-pip
+        update_cache: true
+
+    - name: Enable unattended upgrades
+      copy:
+        content: |
+          APT::Periodic::Update-Package-Lists "1";
+          APT::Periodic::Download-Upgradeable-Packages "1";
+          APT::Periodic::AutocleanInterval "7";
+          APT::Periodic::Unattended-Upgrade "1";
+        dest: /etc/apt/apt.conf.d/20auto-upgrades
+
+    - name: Check if data disk exists
+      stat:
+        path: "{{ data_disk_device }}"
+      register: data_disk
+
+    - name: Format data disk with ext4
+      filesystem:
+        fstype: ext4
+        dev: "{{ data_disk_device }}"
+      when: data_disk.stat.exists
+
+    - name: Create data mount point
+      file:
+        path: "{{ data_mount_point }}"
+        state: directory
+
+    - name: Mount data disk
+      mount:
+        path: "{{ data_mount_point }}"
+        src: "{{ data_disk_device }}"
+        fstype: ext4
+        opts: defaults
+        state: mounted
+      when: data_disk.stat.exists
+
+    - name: Add Docker GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+
+    - name: Add Docker repository
+      apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+
+    - name: Install Docker
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+
+
+
+    - name: Start and enable Docker service
+      systemd:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Install Docker Python module
+      pip:
+        name: docker
+
+- name: Initialize Docker Swarm
+  hosts: managers[0]
+  become: true
+  tasks:
+    - name: Initialize Docker Swarm
+      community.docker.docker_swarm:
+        state: present
+        advertise_addr: "{{ private_ip }}"
+
+    - name: Get swarm join tokens
+      community.docker.docker_swarm_info:
+      register: swarm_info
+
+    - name: Store join tokens
+      set_fact:
+        manager_token: "{{ swarm_info.swarm_facts.JoinTokens.Manager }}"
+        worker_token: "{{ swarm_info.swarm_facts.JoinTokens.Worker }}"
+
+- name: Join managers to swarm
+  hosts: managers[1:]
+  become: true
+  tasks:
+    - name: Join as manager
+      community.docker.docker_swarm:
+        state: join
+        advertise_addr: "{{ private_ip }}"
+        join_token: "{{ hostvars[groups['managers'][0]]['manager_token'] }}"
+        remote_addrs:
+          - "{{ hostvars[groups['managers'][0]]['private_ip'] }}:2377"
+
+- name: Join workers to swarm
+  hosts: workers
+  become: true
+  tasks:
+    - name: Join as worker
+      community.docker.docker_swarm:
+        state: join
+        advertise_addr: "{{ private_ip }}"
+        join_token: "{{ hostvars[groups['managers'][0]]['worker_token'] }}"
+        remote_addrs:
+          - "{{ hostvars[groups['managers'][0]]['private_ip'] }}:2377" 
