@@ -8,6 +8,7 @@ resource "cloudstack_instance" "managers" {
   network_id       = cloudstack_network.main.id
   zone             = data.cloudstack_zone.main.name
   keypair          = cloudstack_ssh_keypair.main.name
+  expunge          = true
 
   tags = {
     Role = "manager"
@@ -37,6 +38,7 @@ resource "cloudstack_instance" "workers" {
   network_id       = cloudstack_network.main.id
   zone             = data.cloudstack_zone.main.name
   keypair          = cloudstack_ssh_keypair.main.name
+  expunge          = true
 
   tags = {
     Role = "worker"
