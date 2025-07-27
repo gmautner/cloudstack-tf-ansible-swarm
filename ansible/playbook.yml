@@ -147,7 +147,7 @@
   tasks:
     - name: Load secrets configuration
       include_vars:
-        file: "{{ playbook_dir }}/secrets.yml"
+        file: "{{ playbook_dir }}/secrets/secrets.yaml"
         name: secrets_config
 
     - name: Create letsencrypt directory on manager-1
@@ -177,9 +177,9 @@
 
     - name: Deploy each stack
       community.docker.docker_stack:
-        name: "{{ item | basename | regex_replace('\\.(yml|yaml)$', '') }}"
+        name: "{{ item.path | basename | splitext | first }}"
         compose:
-          - "{{ item }}"
+          - "{{ item.path }}"
         state: present
-      loop: "{{ stack_files.files | map(attribute='path') | list }}"
-      when: stack_files.files | length > 0 
+      with_items: "{{ stack_files.files }}"
+      when: stack_files.files | length > 0

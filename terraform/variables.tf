@@ -39,8 +39,4 @@ variable "workers" {
     plan         = string
     data_size_gb = number
   }))
-  default = [
-    { name = "wp", plan = "micro", data_size_gb = 75 },
-    { name = "mysql", plan = "medium", data_size_gb = 90 },
-  ]
 } 
