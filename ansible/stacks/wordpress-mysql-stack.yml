@@ -81,8 +81,6 @@ services:
         - traefik.http.routers.wordpress.entrypoints=websecure
         - traefik.http.routers.wordpress.tls.certresolver=letsencrypt
         - traefik.http.services.wordpress.loadbalancer.server.port=80
-    depends_on:
-      - mysql
 
 networks:
   app-network:
