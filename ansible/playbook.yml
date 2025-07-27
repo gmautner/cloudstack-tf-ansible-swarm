@@ -86,8 +86,6 @@
           - docker-ce-cli
           - containerd.io
 
-
-
     - name: Start and enable Docker service
       systemd:
         name: docker
@@ -139,4 +137,49 @@
         advertise_addr: "{{ private_ip }}"
         join_token: "{{ hostvars[groups['managers'][0]]['worker_token'] }}"
         remote_addrs:
-          - "{{ hostvars[groups['managers'][0]]['private_ip'] }}:2377" 
+          - "{{ hostvars[groups['managers'][0]]['private_ip'] }}:2377"
+
+- name: Deploy Docker Stacks
+  hosts: managers[0]
+  become: true
+  vars:
+    stacks_directory: "{{ playbook_dir }}/stacks"
+  tasks:
+    - name: Load secrets configuration
+      include_vars:
+        file: "{{ playbook_dir }}/secrets.yml"
+        name: secrets_config
+
+    - name: Create letsencrypt directory on manager-1
+      file:
+        path: /data/letsencrypt
+        state: directory
+        mode: '0755'
+      when: inventory_hostname == groups['managers'][0]
+
+    - name: Create Docker secrets from environment variables
+      community.docker.docker_secret:
+        name: "{{ item.name }}"
+        data: "{{ lookup('env', item.env_var) }}"
+        state: present
+      loop: "{{ secrets_config.docker_secrets }}"
+      when: 
+        - secrets_config.docker_secrets is defined
+        - lookup('env', item.env_var) != ""
+
+    - name: Find stack files
+      find:
+        paths: "{{ stacks_directory }}"
+        patterns: "*.yml,*.yaml"
+      delegate_to: localhost
+      become: false
+      register: stack_files
+
+    - name: Deploy each stack
+      community.docker.docker_stack:
+        name: "{{ item | basename | regex_replace('\\.(yml|yaml)$', '') }}"
+        compose:
+          - "{{ item }}"
+        state: present
+      loop: "{{ stack_files.files | map(attribute='path') | list }}"
+      when: stack_files.files | length > 0 
