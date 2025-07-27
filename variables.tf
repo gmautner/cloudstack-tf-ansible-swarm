@@ -7,7 +7,7 @@ variable "network_offering_name" {
 variable "template_name" {
   description = "Name of the template to use for instances"
   type        = string
-  default     = "Ubuntu 24.04 (Noble Numbat)"
+  default     = "^Ubuntu.*24.*$"
 }
 
 variable "disk_offering_name" {

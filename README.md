@@ -40,6 +40,9 @@ cp terraform.tfvars.example terraform.tfvars
 ### 3. Implantar Infraestrutura
 
 ```bash
+# Validar Terraform
+terraform validate
+
 # Inicializar Terraform
 terraform init
 

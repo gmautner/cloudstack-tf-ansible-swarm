@@ -1,7 +1,7 @@
 # Create isolated network
 resource "cloudstack_network" "main" {
   name               = "swarm-network"
-  cidr               = "10.1.0.0/24"
+  cidr               = "192.168.1.0/24"
   network_offering   = data.cloudstack_network_offering.main.id
   zone               = data.cloudstack_zone.main.name
   display_text       = "Docker Swarm Network"
