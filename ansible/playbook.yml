@@ -4,7 +4,7 @@
   become: true
   vars:
     data_disk_device: /dev/vdb
-    data_mount_point: /data
+    data_mount_point: /var/lib/docker/volumes
   
   tasks:
     - name: Check if data disk exists
@@ -16,20 +16,6 @@
       filesystem:
         fstype: ext4
         dev: "{{ data_disk_device }}"
-      when: data_disk.stat.exists
-
-    - name: Create data mount point
-      file:
-        path: "{{ data_mount_point }}"
-        state: directory
-
-    - name: Mount data disk
-      mount:
-        path: "{{ data_mount_point }}"
-        src: "{{ data_disk_device }}"
-        fstype: ext4
-        opts: defaults
-        state: mounted
       when: data_disk.stat.exists
 
     # FIX enquanto houver problema GRUB
@@ -97,6 +83,16 @@
         name: python3-docker
         update_cache: true
 
+    # Mount data disk to Docker volumes directory (no volumes exist yet after fresh install)
+    - name: Mount data disk to Docker volumes directory
+      mount:
+        path: "{{ data_mount_point }}"
+        src: "{{ data_disk_device }}"
+        fstype: ext4
+        opts: defaults
+        state: mounted
+      when: data_disk.stat.exists
+
 - name: Initialize Docker Swarm
   hosts: managers[0]
   become: true
@@ -155,13 +151,6 @@
       include_vars:
         file: "{{ playbook_dir }}/secrets/secrets.yaml"
         name: secrets_config
-
-    - name: Create letsencrypt directory on manager-1
-      file:
-        path: /data/letsencrypt
-        state: directory
-        mode: '0755'
-      when: inventory_hostname == groups['managers'][0]
 
     - name: Create Docker secrets from environment variables
       community.docker.docker_secret:

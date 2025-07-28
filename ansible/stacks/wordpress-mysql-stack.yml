@@ -21,7 +21,7 @@ services:
       - --entrypoints.web.http.redirections.entrypoint.scheme=https
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - /data/letsencrypt:/letsencrypt
+      - letsencrypt_data:/letsencrypt
     networks:
       - app-network
     deploy:
@@ -45,7 +45,7 @@ services:
       MYSQL_USER: wordpress
       MYSQL_PASSWORD_FILE: /run/secrets/wordpress_db_password
     volumes:
-      - /data:/var/lib/mysql
+      - mysql_data:/var/lib/mysql
     networks:
       - app-network
     secrets:
@@ -64,7 +64,7 @@ services:
       WORDPRESS_DB_USER: wordpress
       WORDPRESS_DB_PASSWORD_FILE: /run/secrets/wordpress_db_password
     volumes:
-      - /data:/var/www/html
+      - wordpress_data:/var/www/html
     networks:
       - app-network
     secrets:
@@ -81,10 +81,14 @@ services:
         - traefik.http.routers.wordpress.tls.certresolver=letsencrypt
         - traefik.http.services.wordpress.loadbalancer.server.port=80
 
+volumes:
+  letsencrypt_data:
+  mysql_data:
+  wordpress_data:
+
 networks:
   app-network:
     driver: overlay
-    attachable: true
 
 secrets:
   mysql_root_password:
