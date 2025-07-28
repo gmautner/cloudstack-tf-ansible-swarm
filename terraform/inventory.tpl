@@ -17,13 +17,3 @@ ${worker.name} ansible_host=${public_ip} ansible_port=${worker.port} private_ip=
 [swarm:children]
 managers
 workers
-
-[docker_swarm_manager]
-%{ for manager in managers ~}
-${manager.name}
-%{ endfor ~}
-
-[docker_swarm_worker]
-%{ for worker in workers ~}
-${worker.name}
-%{ endfor ~} 
