@@ -1,42 +1,6 @@
 version: '3.8'
 
 services:
-  traefik:
-    image: traefik:v3.0
-    ports:
-      - "80:80"
-      - "443:443"
-    command:
-      - --api.dashboard=true
-      - --api.insecure=false
-      - --providers.swarm=true
-      - --providers.swarm.exposedbydefault=false
-      - --providers.swarm.network=app-network
-      - --entrypoints.web.address=:80
-      - --entrypoints.websecure.address=:443
-      - --certificatesresolvers.letsencrypt.acme.tlschallenge=true
-      - --certificatesresolvers.letsencrypt.acme.email=admin@{{ domain_suffix }}
-      - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
-      - --entrypoints.web.http.redirections.entrypoint.to=websecure
-      - --entrypoints.web.http.redirections.entrypoint.scheme=https
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - letsencrypt_data:/letsencrypt
-    networks:
-      - app-network
-    deploy:
-      replicas: 1
-      placement:
-        constraints:
-          - node.hostname == manager-1
-      labels:
-        - traefik.enable=true
-        - traefik.http.routers.traefik.rule=Host(`traefik.{{ domain_suffix }}`)
-        - traefik.http.routers.traefik.entrypoints=websecure
-        - traefik.http.routers.traefik.tls.certresolver=letsencrypt
-        - traefik.http.routers.traefik.service=api@internal
-        - traefik.http.services.traefik.loadbalancer.server.port=8080
-
   mysql:
     image: mysql:8.4
     environment:
@@ -82,7 +46,6 @@ services:
         - traefik.http.services.wordpress.loadbalancer.server.port=80
 
 volumes:
-  letsencrypt_data:
   mysql_data:
   wordpress_data:
 
