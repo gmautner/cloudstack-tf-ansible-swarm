@@ -16,17 +16,17 @@ resource "local_file" "ansible_inventory" {
     public_ip = cloudstack_ipaddress.main.ip_address
     managers = [
       for i in range(3) : {
-        name = cloudstack_instance.managers[i].name
-        port = 22001 + i
+        name       = cloudstack_instance.managers[i].name
+        port       = 22001 + i
         private_ip = cloudstack_instance.managers[i].ip_address
       }
     ]
     workers = [
       for i in range(length(var.workers)) : {
-        name = cloudstack_instance.workers[i].name
-        port = 22004 + i
+        name       = cloudstack_instance.workers[i].name
+        port       = 22004 + i
         private_ip = cloudstack_instance.workers[i].ip_address
-        role = var.workers[i].name
+        role       = var.workers[i].name
       }
     ]
     domain_suffix = var.domain_suffix

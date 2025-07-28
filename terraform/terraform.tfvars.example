@@ -1,6 +1,9 @@
 # SSH public key for instance access
 ssh_public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC... your-public-key-here"
 
+# Cluster name
+cluster_name = "cluster-1"
+
 # Domain suffix for WordPress and Traefik access
 domain_suffix = "example.com"
 

@@ -27,6 +27,11 @@ variable "allowed_ssh_cidr_blocks" {
   default     = ["0.0.0.0/0"]
 }
 
+variable "cluster_name" {
+  description = "Name of the cluster"
+  type        = string
+}
+
 variable "domain_suffix" {
   description = "Domain suffix for WordPress and Traefik access"
   type        = string

@@ -1,10 +1,10 @@
 # Create isolated network
 resource "cloudstack_network" "main" {
-  name               = "swarm-network"
-  cidr               = "192.168.1.0/24"
-  network_offering   = data.cloudstack_network_offering.main.id
-  zone               = data.cloudstack_zone.main.name
-  display_text       = "Docker Swarm Network"
+  name             = "${var.cluster_name}-network"
+  cidr             = "192.168.1.0/24"
+  network_offering = data.cloudstack_network_offering.main.id
+  zone             = data.cloudstack_zone.main.name
+  display_text     = "Docker Swarm Network for ${var.cluster_name}"
 }
 
 # Acquire public IP
@@ -15,7 +15,7 @@ resource "cloudstack_ipaddress" "main" {
 
 # Create SSH keypair
 resource "cloudstack_ssh_keypair" "main" {
-  name       = "swarm-keypair"
+  name       = "${var.cluster_name}-keypair"
   public_key = var.ssh_public_key
 }
 
@@ -25,18 +25,20 @@ resource "cloudstack_firewall" "web" {
 
   rule {
     cidr_list = ["0.0.0.0/0"]
-    protocol    = "tcp"
-    ports       = ["80", "443"]
+    protocol  = "tcp"
+    ports     = ["80", "443"]
   }
 }
 
 # Firewall rules for SSH access (ports 22001-22100)
 resource "cloudstack_firewall" "ssh" {
+  depends_on = [cloudstack_firewall.web]
+
   ip_address_id = cloudstack_ipaddress.main.id
 
   rule {
-    cidr_list   = var.allowed_ssh_cidr_blocks
-    protocol    = "tcp"
-    ports       = ["22001-22100"]
+    cidr_list = var.allowed_ssh_cidr_blocks
+    protocol  = "tcp"
+    ports     = ["22001-22100"]
   }
-} 
+}
