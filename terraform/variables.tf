@@ -38,9 +38,8 @@ variable "domain_suffix" {
 }
 
 variable "workers" {
-  description = "List of worker nodes to create"
-  type = list(object({
-    name         = string
+  description = "Map of worker nodes to create"
+  type = map(object({
     plan         = string
     data_size_gb = number
   }))

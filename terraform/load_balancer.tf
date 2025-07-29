@@ -37,14 +37,14 @@ resource "cloudstack_port_forward" "manager_ssh" {
 
 # Port forwarding rules for SSH access to workers (starting at 22004)
 resource "cloudstack_port_forward" "worker_ssh" {
-  count = length(var.workers)
+  for_each = var.workers
 
   ip_address_id = cloudstack_ipaddress.main.id
 
   forward {
     protocol           = "tcp"
-    public_port        = 22004 + count.index
+    public_port        = 22004 + index(keys(var.workers), each.key)
     private_port       = 22
-    virtual_machine_id = cloudstack_instance.workers[count.index].id
+    virtual_machine_id = cloudstack_instance.workers[each.key].id
   }
-} 
+}

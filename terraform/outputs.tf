@@ -22,14 +22,14 @@ resource "local_file" "ansible_inventory" {
       }
     ]
     workers = [
-      for i in range(length(var.workers)) : {
-        name       = cloudstack_instance.workers[i].name
-        port       = 22004 + i
-        private_ip = cloudstack_instance.workers[i].ip_address
-        role       = var.workers[i].name
+      for idx, worker_name in keys(var.workers) : {
+        name       = cloudstack_instance.workers[worker_name].name
+        port       = 22004 + idx
+        private_ip = cloudstack_instance.workers[worker_name].ip_address
+        role       = worker_name
       }
     ]
     domain_suffix = var.domain_suffix
   })
   filename = "${path.module}/../ansible/inventory.ini"
-} 
+}

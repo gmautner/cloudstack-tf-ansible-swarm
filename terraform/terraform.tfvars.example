@@ -11,7 +11,7 @@ domain_suffix = "example.com"
 # allowed_ssh_cidr_blocks = ["203.0.113.0/24", "198.51.100.0/24"]
 
 # Workers configuration
-workers = [
-  { name = "wp", plan = "micro", data_size_gb = 75 },
-  { name = "mysql", plan = "medium", data_size_gb = 90 },
-] 
+workers = {
+  "wp" = { plan = "micro", data_size_gb = 75 },
+  "mysql" = { plan = "medium", data_size_gb = 90 },
+} 

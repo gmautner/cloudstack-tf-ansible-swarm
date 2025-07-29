@@ -30,11 +30,11 @@ resource "cloudstack_disk" "manager_data" {
 
 # Worker instances
 resource "cloudstack_instance" "workers" {
-  count = length(var.workers)
+  for_each = var.workers
 
-  name             = var.workers[count.index].name
+  name             = each.key
   template         = data.cloudstack_template.main.id
-  service_offering = var.workers[count.index].plan
+  service_offering = each.value.plan
   network_id       = cloudstack_network.main.id
   zone             = data.cloudstack_zone.main.name
   keypair          = cloudstack_ssh_keypair.main.name
@@ -42,18 +42,18 @@ resource "cloudstack_instance" "workers" {
 
   tags = {
     Role = "worker"
-    Name = var.workers[count.index].name
+    Name = each.key
   }
 }
 
 # Data disks for workers (varying sizes)
 resource "cloudstack_disk" "worker_data" {
-  count = length(var.workers)
+  for_each = var.workers
 
-  name               = "${var.workers[count.index].name}-data"
+  name               = "${each.key}-data"
   attach             = true
   disk_offering      = var.disk_offering_name
-  size               = var.workers[count.index].data_size_gb
-  virtual_machine_id = cloudstack_instance.workers[count.index].id
+  size               = each.value.data_size_gb
+  virtual_machine_id = cloudstack_instance.workers[each.key].id
   zone               = data.cloudstack_zone.main.name
 } 
