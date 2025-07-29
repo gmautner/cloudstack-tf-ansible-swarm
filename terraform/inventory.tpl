@@ -11,7 +11,7 @@ ${manager.name} ansible_host=${public_ip} ansible_port=${manager.port} private_i
 
 [workers]
 %{ for worker in workers ~}
-${worker.name} ansible_host=${public_ip} ansible_port=${worker.port} private_ip=${worker.private_ip} worker_role=${worker.role}
+${worker.name} ansible_host=${public_ip} ansible_port=${worker.port} private_ip=${worker.private_ip}
 %{ endfor ~}
 
 [swarm:children]
