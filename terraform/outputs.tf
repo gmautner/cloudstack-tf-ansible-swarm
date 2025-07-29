@@ -15,16 +15,16 @@ resource "local_file" "ansible_inventory" {
   content = templatefile("${path.module}/inventory.tpl", {
     public_ip = cloudstack_ipaddress.main.ip_address
     managers = [
-      for i in range(3) : {
+      for i in range(var.manager_count) : {
         name       = cloudstack_instance.managers[i].name
-        port       = 22001 + i
+        port       = tolist(cloudstack_port_forward.manager_ssh[i].forward)[0].public_port
         private_ip = cloudstack_instance.managers[i].ip_address
       }
     ]
     workers = [
-      for idx, worker_name in keys(var.workers) : {
+      for worker_name in keys(var.workers) : {
         name       = cloudstack_instance.workers[worker_name].name
-        port       = 22004 + idx
+        port       = tolist(cloudstack_port_forward.worker_ssh[worker_name].forward)[0].public_port
         private_ip = cloudstack_instance.workers[worker_name].ip_address
         role       = worker_name
       }

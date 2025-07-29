@@ -23,7 +23,7 @@ resource "cloudstack_loadbalancer_rule" "https" {
 
 # Port forwarding rules for SSH access to managers (22001-22003)
 resource "cloudstack_port_forward" "manager_ssh" {
-  count = 3
+  count = var.manager_count
 
   ip_address_id = cloudstack_ipaddress.main.id
 

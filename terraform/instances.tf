@@ -1,6 +1,6 @@
 # Manager instances
 resource "cloudstack_instance" "managers" {
-  count = 3
+  count = var.manager_count
 
   name             = "manager-${count.index + 1}"
   template         = data.cloudstack_template.main.id
@@ -18,7 +18,7 @@ resource "cloudstack_instance" "managers" {
 
 # Data disks for managers (50GB each)
 resource "cloudstack_disk" "manager_data" {
-  count = 3
+  count = var.manager_count
 
   name               = "manager-${count.index + 1}-data"
   attach             = true

@@ -44,3 +44,14 @@ variable "workers" {
     data_size_gb = number
   }))
 }
+
+variable "manager_count" {
+  description = "Número de managers do Docker Swarm (permitido: 1 ou 3, default: 3)"
+  type        = number
+  default     = 3
+
+  validation {
+    condition     = contains([1, 3], var.manager_count)
+    error_message = "O número de managers deve ser 1 ou 3."
+  }
+}
