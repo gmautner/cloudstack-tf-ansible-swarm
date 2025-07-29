@@ -11,7 +11,7 @@ services:
       - --api.insecure=false
       - --providers.swarm=true
       - --providers.swarm.exposedbydefault=false
-      - --providers.swarm.network=app-network
+      - --providers.swarm.network=ingress_network
       - --entrypoints.web.address=:80
       - --entrypoints.websecure.address=:443
       - --certificatesresolvers.letsencrypt.acme.tlschallenge=true
