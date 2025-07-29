@@ -7,16 +7,7 @@ cluster_name = "cluster-1"
 # Domain suffix for WordPress and Traefik access
 domain_suffix = "example.com"
 
-# Optional: Customize network offering (default: "Default Guest Network")
-# network_offering_name = "Default Guest Network"
-
-# Optional: Customize template (default: "Ubuntu 24.04 (Noble Numbat)")
-# template_name = "Ubuntu 24.04 (Noble Numbat)"
-
-# Optional: Customize disk offering (default: "data.disk.general")
-# disk_offering_name = "data.disk.general"
-
-# Optional: Restrict SSH access (default: ["0.0.0.0/0"])
+# Opcional: Restringir acesso SSH (default: ["0.0.0.0/0"])
 # allowed_ssh_cidr_blocks = ["203.0.113.0/24", "198.51.100.0/24"]
 
 # Workers configuration
