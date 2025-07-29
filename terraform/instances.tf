@@ -4,7 +4,7 @@ resource "cloudstack_instance" "managers" {
 
   name             = "manager-${count.index + 1}"
   template         = data.cloudstack_template.main.id
-  service_offering = "large"
+  service_offering = "medium"
   network_id       = cloudstack_network.main.id
   zone             = data.cloudstack_zone.main.name
   keypair          = cloudstack_ssh_keypair.main.name

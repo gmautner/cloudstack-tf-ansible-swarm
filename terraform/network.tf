@@ -21,6 +21,13 @@ resource "cloudstack_ssh_keypair" "main" {
 
 # Firewall rules for HTTP/HTTPS traffic
 resource "cloudstack_firewall" "web" {
+  depends_on = [
+    cloudstack_loadbalancer_rule.http,
+    cloudstack_loadbalancer_rule.https,
+    cloudstack_port_forward.manager_ssh,
+    cloudstack_port_forward.worker_ssh
+  ]
+
   ip_address_id = cloudstack_ipaddress.main.id
 
   rule {
@@ -32,7 +39,12 @@ resource "cloudstack_firewall" "web" {
 
 # Firewall rules for SSH access (ports 22001-22100)
 resource "cloudstack_firewall" "ssh" {
-  depends_on = [cloudstack_firewall.web]
+  depends_on = [
+    cloudstack_loadbalancer_rule.http,
+    cloudstack_loadbalancer_rule.https,
+    cloudstack_port_forward.manager_ssh,
+    cloudstack_port_forward.worker_ssh
+  ]
 
   ip_address_id = cloudstack_ipaddress.main.id
 
