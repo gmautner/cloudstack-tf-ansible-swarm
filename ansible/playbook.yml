@@ -187,6 +187,7 @@
     - name: Deploy each stack
       community.docker.docker_stack:
         name: "{{ item.path | basename | splitext | first }}"
+        prune: true
         compose:
           - "/tmp/stacks/{{ item.path | basename }}"
         state: present
