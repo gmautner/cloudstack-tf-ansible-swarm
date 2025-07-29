@@ -93,6 +93,10 @@
         state: mounted
       when: data_disk.stat.exists
 
+    - name: Resize ext4 filesystem to use full disk
+      command: resize2fs {{ data_disk_device }}
+      when: data_disk.stat.exists
+
 - name: Initialize Docker Swarm
   hosts: managers[0]
   become: true
