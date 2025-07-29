@@ -23,7 +23,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - letsencrypt_data:/letsencrypt
     networks:
-      - app-network
+      - ingress_network
     deploy:
       replicas: 1
       placement:
@@ -41,5 +41,7 @@ volumes:
   letsencrypt_data:
 
 networks:
-  app-network:
+  ingress_network:
+    # Atribuímos explicitamente um nome para que possa ser usado em outras stacks
+    name: ingress_network
     driver: overlay

@@ -11,7 +11,7 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
     networks:
-      - app-network
+      - wp_network
     secrets:
       - mysql_root_password
       - wordpress_db_password
@@ -30,7 +30,8 @@ services:
     volumes:
       - wordpress_data:/var/www/html
     networks:
-      - app-network
+      - ingress_network
+      - wp_network
     secrets:
       - wordpress_db_password
     deploy:
@@ -50,8 +51,10 @@ volumes:
   wordpress_data:
 
 networks:
-  app-network:
+  wp_network:
     driver: overlay
+  ingress_network:
+    external: true
 
 secrets:
   mysql_root_password:
