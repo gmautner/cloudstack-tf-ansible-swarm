@@ -72,11 +72,29 @@
           - docker-ce-cli
           - containerd.io
 
+    - name: Create Docker service override directory
+      file:
+        path: /etc/systemd/system/docker.service.d
+        state: directory
+        mode: '0755'
+
+    - name: Configure Docker daemon resource limits
+      copy:
+        content: |
+          [Service]
+          MemoryHigh=2800M
+          MemoryMax=3000M
+          MemoryAccounting=yes
+        dest: /etc/systemd/system/docker.service.d/limits.conf
+        mode: '0644'
+      notify: restart docker
+
     - name: Start and enable Docker service
       systemd:
         name: docker
         state: started
         enabled: true
+        daemon_reload: true
 
     - name: Install Docker Python module
       apt:
@@ -96,6 +114,13 @@
     - name: Resize ext4 filesystem to use full disk
       command: resize2fs {{ data_disk_device }}
       when: data_disk.stat.exists
+
+  handlers:
+    - name: restart docker
+      systemd:
+        name: docker
+        state: restarted
+        daemon_reload: true
 
 - name: Initialize Docker Swarm
   hosts: managers[0]

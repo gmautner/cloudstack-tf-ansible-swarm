@@ -36,6 +36,11 @@ services:
         - traefik.http.routers.traefik.tls.certresolver=letsencrypt
         - traefik.http.routers.traefik.service=api@internal
         - traefik.http.services.traefik.loadbalancer.server.port=8080
+      resources:
+        limits:
+          memory: '{{ (ansible_memtotal_mb * 0.80) | int }}m'
+        reservations:
+          memory: '{{ (ansible_memtotal_mb * 0.60) | int }}m'
 
 volumes:
   letsencrypt_data:
