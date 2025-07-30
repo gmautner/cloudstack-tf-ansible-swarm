@@ -23,8 +23,6 @@ services:
       resources:
         limits:
           memory: '{{ (ansible_memtotal_mb * 0.80) | int }}m'
-        reservations:
-          memory: '{{ (ansible_memtotal_mb * 0.60) | int }}m'
 
   wordpress:
     image: wordpress:php8.3-apache
@@ -53,8 +51,6 @@ services:
       resources:
         limits:
           memory: '{{ (ansible_memtotal_mb * 0.80) | int }}m'
-        reservations:
-          memory: '{{ (ansible_memtotal_mb * 0.60) | int }}m'
 
 volumes:
   mysql_data:
