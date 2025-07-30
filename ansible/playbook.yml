@@ -82,8 +82,8 @@
       copy:
         content: |
           [Service]
-          MemoryHigh=2800M
-          MemoryMax=3000M
+          MemoryHigh=60%
+          MemoryMax=80%
           MemoryAccounting=yes
         dest: /etc/systemd/system/docker.service.d/limits.conf
         mode: '0644'
