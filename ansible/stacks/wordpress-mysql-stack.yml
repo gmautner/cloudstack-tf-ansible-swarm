@@ -22,7 +22,7 @@ services:
           - node.hostname == mysql
       resources:
         limits:
-          memory: '{{ (ansible_memtotal_mb * 0.80) | int }}m'
+          memory: '{{ (hostvars["mysql"]["ansible_memtotal_mb"] * 0.80) | int }}m'
 
   wordpress:
     image: wordpress:php8.3-apache
@@ -50,7 +50,7 @@ services:
         - traefik.http.services.wordpress.loadbalancer.server.port=80
       resources:
         limits:
-          memory: '{{ (ansible_memtotal_mb * 0.80) | int }}m'
+          memory: '{{ (hostvars["wp"]["ansible_memtotal_mb"] * 0.80) | int }}m'
 
 volumes:
   mysql_data:
