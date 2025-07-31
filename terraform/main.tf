@@ -11,7 +11,7 @@ terraform {
 
 # Configure the CloudStack Provider
 provider "cloudstack" {
-  api_url = "https://painel-cloud.locaweb.com.br/client/api"
+  # api_url will be sourced from CLOUDSTACK_API_URL environment variable
 }
 
 # Data sources for CloudStack resources

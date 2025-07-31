@@ -15,7 +15,7 @@ A infraestrutura consiste em:
 
 - Terraform >= 1.0
 - Ansible com coleção `community.docker`
-- As credenciais da API CloudStack devem ser fornecidas através das variáveis de ambiente `CLOUDSTACK_API_KEY` e `CLOUDSTACK_SECRET_KEY`.
+- As credenciais da API CloudStack devem ser fornecidas através das variáveis de ambiente `CLOUDSTACK_API_URL`, `CLOUDSTACK_API_KEY` e `CLOUDSTACK_SECRET_KEY`.
 - Par de chaves SSH
 - Nome de domínio com acesso ao gerenciamento de DNS
 
@@ -24,6 +24,7 @@ A infraestrutura consiste em:
 ### 1. Definir Variáveis de Ambiente
 
 ```bash
+export CLOUDSTACK_API_URL="https://painel-cloud.locaweb.com.br/client/api"
 export CLOUDSTACK_API_KEY="sua-api-key"
 export CLOUDSTACK_SECRET_KEY="sua-secret-key"
 export MYSQL_ROOT_PASSWORD="senha-root-segura"
