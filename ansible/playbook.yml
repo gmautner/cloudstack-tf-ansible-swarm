@@ -115,6 +115,10 @@
       command: resize2fs {{ data_disk_device }}
       when: data_disk.stat.exists
 
+    - name: Calculate available memory for each host
+      set_fact:
+        available_memory_mb: "{{ ((ansible_memtotal_mb * 0.9) | int) - 300 }}"
+
   handlers:
     - name: restart docker
       systemd:
