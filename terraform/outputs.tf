@@ -22,6 +22,18 @@ output "worker_count" {
   value       = local.worker_count
 }
 
+# Output cluster name
+output "cluster_name" {
+  description = "Name of the cluster"
+  value       = var.cluster_name
+}
+
+# Output cluster ID
+output "cluster_id" {
+  description = "Unique cluster identifier"
+  value       = local.cluster_id
+}
+
 # Generate Ansible inventory file
 resource "local_file" "ansible_inventory" {
   content = templatefile("${path.module}/inventory.tpl", {

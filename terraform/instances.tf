@@ -1,3 +1,12 @@
+# Random string for cluster suffix
+resource "random_string" "cluster_suffix" {
+  length  = 8
+  lower   = true
+  upper   = false
+  numeric = true
+  special = false
+}
+
 # Calculate manager service offering based on worker pool size
 # 1-10 workers: medium, 11-100 workers: large, >100 workers: xlarge
 locals {
@@ -5,6 +14,7 @@ locals {
   manager_service_offering = local.worker_count <= 10 ? "medium" : (
     local.worker_count <= 100 ? "large" : "xlarge"
   )
+  cluster_id = "${var.cluster_name}-${random_string.cluster_suffix.result}"
 }
 
 # Manager instances
@@ -20,8 +30,10 @@ resource "cloudstack_instance" "managers" {
   expunge          = true
 
   tags = {
-    Role = "manager"
-    Name = "manager-${count.index + 1}"
+    role         = "manager"
+    name         = "manager-${count.index + 1}"
+    cluster_name = var.cluster_name
+    cluster_id   = local.cluster_id
   }
 }
 
@@ -35,6 +47,8 @@ resource "cloudstack_disk" "manager_data" {
   size               = 50
   virtual_machine_id = cloudstack_instance.managers[count.index].id
   zone               = data.cloudstack_zone.main.name
+
+  tags = cloudstack_instance.managers[count.index].tags
 }
 
 # Worker instances
@@ -50,8 +64,10 @@ resource "cloudstack_instance" "workers" {
   expunge          = true
 
   tags = {
-    Role = "worker"
-    Name = each.key
+    role         = "worker"
+    name         = each.key
+    cluster_name = var.cluster_name
+    cluster_id   = local.cluster_id
   }
 }
 
@@ -65,6 +81,8 @@ resource "cloudstack_disk" "worker_data" {
   size               = each.value.data_size_gb
   virtual_machine_id = cloudstack_instance.workers[each.key].id
   zone               = data.cloudstack_zone.main.name
+
+  tags = cloudstack_instance.workers[each.key].tags
 
   lifecycle {
     ignore_changes = [name]
