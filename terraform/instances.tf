@@ -56,4 +56,8 @@ resource "cloudstack_disk" "worker_data" {
   size               = each.value.data_size_gb
   virtual_machine_id = cloudstack_instance.workers[each.key].id
   zone               = data.cloudstack_zone.main.name
-} 
+
+  lifecycle {
+    ignore_changes = [name]
+  }
+}
