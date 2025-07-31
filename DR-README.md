@@ -22,7 +22,10 @@ Antes de executar o script, defina as seguintes variáveis de ambiente:
 ```bash
 export CLOUDSTACK_API_KEY="sua-api-key"
 export CLOUDSTACK_SECRET_KEY="sua-secret-key"
+export CLOUDSTACK_API_URL="https://painel-cloud.locaweb.com.br/client/api"  # Opcional
 ```
+
+**Nota**: Se `CLOUDSTACK_API_URL` não for definida, o script usará a URL padrão da Locaweb. Para outros provedores CloudStack, defina a URL apropriada.
 
 ### Cluster ID
 

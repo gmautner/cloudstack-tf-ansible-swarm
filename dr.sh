@@ -6,7 +6,7 @@
 set -euo pipefail
 
 # Configuration
-CLOUDSTACK_API_URL="https://painel-cloud.locaweb.com.br/client/api"
+CLOUDSTACK_API_URL="${CLOUDSTACK_API_URL:-https://painel-cloud.locaweb.com.br/client/api}"
 
 # Colors for output
 RED='\033[0;31m'
@@ -59,6 +59,7 @@ EXEMPLOS:
 VARIÁVEIS DE AMBIENTE:
     CLOUDSTACK_API_KEY      Chave de API do CloudStack
     CLOUDSTACK_SECRET_KEY   Chave secreta do CloudStack
+    CLOUDSTACK_API_URL      URL da API do CloudStack (padrão: https://painel-cloud.locaweb.com.br/client/api)
 
 EOF
 }
