@@ -1,10 +1,19 @@
+# Calculate manager service offering based on worker pool size
+# 1-10 workers: medium, 11-100 workers: large, >100 workers: xlarge
+locals {
+  worker_count = length(var.workers)
+  manager_service_offering = local.worker_count <= 10 ? "medium" : (
+    local.worker_count <= 100 ? "large" : "xlarge"
+  )
+}
+
 # Manager instances
 resource "cloudstack_instance" "managers" {
   count = var.manager_count
 
   name             = "manager-${count.index + 1}"
   template         = data.cloudstack_template.main.id
-  service_offering = "medium"
+  service_offering = local.manager_service_offering
   network_id       = cloudstack_network.main.id
   zone             = data.cloudstack_zone.main.name
   keypair          = cloudstack_ssh_keypair.main.name

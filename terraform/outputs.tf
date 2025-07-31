@@ -10,6 +10,18 @@ output "domain_suffix" {
   value       = var.domain_suffix
 }
 
+# Output calculated manager service offering
+output "manager_service_offering" {
+  description = "Service offering assigned to managers based on worker pool size"
+  value       = local.manager_service_offering
+}
+
+# Output worker count for reference
+output "worker_count" {
+  description = "Total number of workers in the cluster"
+  value       = local.worker_count
+}
+
 # Generate Ansible inventory file
 resource "local_file" "ansible_inventory" {
   content = templatefile("${path.module}/inventory.tpl", {
