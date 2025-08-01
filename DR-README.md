@@ -29,12 +29,14 @@ export CLOUDSTACK_API_URL="https://painel-cloud.locaweb.com.br/client/api"  # Op
 
 ### Cluster ID
 
-O script pode detectar automaticamente o ID do cluster a partir da saída do Terraform. Se necessário, você também pode especificar manualmente:
+O cluster_id é **obrigatório** e deve ser **diferente** do cluster atual no Terraform. Isso garante que a recuperação seja feita a partir de um cluster criado do zero, evitando confusão entre snapshots do cluster antigo e do novo cluster limpo.
 
 ```bash
-# Para verificar o cluster ID manualmente (opcional)
+# Para verificar o cluster ID atual no Terraform
 cd terraform
 terraform output cluster_id
+
+# Use um cluster_id DIFERENTE do retornado acima para a recuperação
 ```
 
 ## Instalação
@@ -89,12 +91,12 @@ Para instalar o CloudMonkey, siga as instruções abaixo:
 ### Sintaxe Básica
 
 ```bash
-./dr.sh [OPÇÕES]
+./dr.sh -c CLUSTER_ID [OPÇÕES]
 ```
 
 ### Opções Disponíveis
 
-- `-c, --cluster-id CLUSTER_ID` - ID do cluster a ser recuperado (auto-detectado se não fornecido)
+- `-c, --cluster-id CLUSTER_ID` - ID do cluster a ser recuperado (**OBRIGATÓRIO** - deve ser diferente do cluster atual)
 - `-d, --dry-run` - Executar em modo teste (mostra comandos sem executar)
 - `-t, --terraform-dir DIR` - Caminho para o diretório do Terraform (padrão: terraform)
 - `-h, --help` - Exibir ajuda
@@ -104,24 +106,21 @@ Para instalar o CloudMonkey, siga as instruções abaixo:
 #### Recuperação Normal
 
 ```bash
-# Recuperar cluster com ID auto-detectado (recomendado)
-./dr.sh
-
-# Recuperar cluster com ID específico
+# Recuperar cluster com ID específico (obrigatório)
 ./dr.sh -c cluster-1-z1msjfjd
 
 # Especificar diretório customizado do Terraform
-./dr.sh -t /caminho/para/terraform
+./dr.sh -c cluster-1-z1msjfjd -t /caminho/para/terraform
 ```
 
 #### Modo Teste (Dry Run)
 
 ```bash
-# Executar em modo teste com cluster ID auto-detectado (recomendado)
-./dr.sh --dry-run
-
-# Executar em modo teste com cluster ID específico
+# Executar em modo teste com cluster ID específico (obrigatório)
 ./dr.sh -c cluster-1-z1msjfjd --dry-run
+
+# Modo teste com diretório customizado do Terraform
+./dr.sh -c cluster-1-z1msjfjd --dry-run -t /caminho/para/terraform
 ```
 
 **Recomendação**: Sempre execute primeiro em modo `--dry-run` para verificar se tudo está correto antes da execução real.
@@ -134,7 +133,7 @@ O script executa os seguintes passos automaticamente:
 - Verifica variáveis de ambiente necessárias
 - Confirma presença de ferramentas requeridas
 - Valida diretório do Terraform
-- Auto-detecta cluster ID do Terraform (se não fornecido)
+- Valida que o cluster_id fornecido é diferente do cluster atual no Terraform
 
 ### 2. Verificação do CloudMonkey
 - Verifica se o CloudMonkey está instalado e disponível no PATH
@@ -182,8 +181,8 @@ O script produz logs coloridos para facilitar o acompanhamento:
 [INFO] Starting disaster recovery for cluster: cluster-1-z1msjfjd
 [INFO] Checking dependencies...
 [SUCCESS] Dependencies check passed
-[INFO] Auto-detecting cluster ID from Terraform output...
-[SUCCESS] Auto-detected cluster ID: cluster-1-z1msjfjd
+[INFO] Validating provided cluster_id...
+[SUCCESS] Cluster_id validated: cluster-1-z1msjfjd (different from current: cluster-2-abc123)
 [INFO] CloudMonkey is already installed
 [INFO] Configuring CloudMonkey...
 [SUCCESS] CloudMonkey configured successfully
@@ -263,17 +262,16 @@ docker service logs <nome-do-servico>
 
 **Solução**: Defina as variáveis de ambiente corretas.
 
-#### 3. Cluster ID Não Encontrado
+#### 3. Cluster ID Obrigatório
 
 ```
-[ERROR] Não foi possível obter o ID do cluster da saída do Terraform
+[ERROR] O cluster_id é obrigatório para recuperação de desastre
 ```
 
 **Solução**: 
-- Verifique se a infraestrutura foi implantada com `terraform apply`
-- Confirme que o output `cluster_id` está definido no Terraform
-- Verifique se o backend do Terraform está configurado corretamente
-- Teste manualmente: `cd terraform && terraform output cluster_id`
+- Forneça um cluster_id usando a opção `-c` ou `--cluster-id`
+- O cluster_id deve ser diferente do cluster atual no Terraform
+- Teste manualmente: `cd terraform && terraform output cluster_id` para ver o cluster atual
 
 #### 4. VMs do Cluster Não Encontradas
 
@@ -321,7 +319,8 @@ Se o script falhar, você pode executar os comandos manualmente seguindo o proce
 
 ### Versão Atual
 
-- **Auto-detecção de Cluster ID**: O script agora detecta automaticamente o cluster ID a partir da saída do Terraform, eliminando a necessidade de especificar manualmente na maioria dos casos.
+- **Cluster ID Obrigatório**: O script agora exige que o cluster_id seja fornecido explicitamente e seja diferente do cluster atual no Terraform. Isso garante que a recuperação seja feita a partir de um cluster criado do zero, evitando confusão entre snapshots.
+- **Validação de Cluster**: O script valida automaticamente que o cluster_id fornecido é diferente do cluster atual antes de prosseguir com a recuperação.
 - **Script Unificado**: Todas as funcionalidades foram consolidadas no script principal `dr.sh`, removendo a necessidade de scripts auxiliares separados.
 
 ## Segurança e Boas Práticas

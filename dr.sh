@@ -39,22 +39,24 @@ log_error() {
 
 show_usage() {
     cat << EOF
-Uso: $0 [OPÇÕES]
+Uso: $0 -c CLUSTER_ID [OPÇÕES]
 
 Script de Recuperação de Desastres para Cluster Docker Swarm no CloudStack
 
 OPÇÕES:
-    -c, --cluster-id CLUSTER_ID    ID do cluster a ser recuperado (auto-detectado se não fornecido)
+    -c, --cluster-id CLUSTER_ID    ID do cluster a ser recuperado (OBRIGATÓRIO - deve ser diferente do cluster atual)
     -d, --dry-run                  Exibir comandos sem executá-los
     -t, --terraform-dir DIR        Caminho para o diretório do Terraform (padrão: terraform)
     -h, --help                     Exibir esta mensagem de ajuda
 
 EXEMPLOS:
-    $0                                          # Auto-detectar ID do cluster do Terraform
-    $0 --dry-run                               # Modo teste com ID do cluster auto-detectado
-    $0 -c cluster-1-z1msjfjd                   # Usar ID do cluster específico
-    $0 --cluster-id cluster-1-z1msjfjd --dry-run
-    $0 -t /caminho/para/terraform
+    $0 -c cluster-1-z1msjfjd                   # Usar ID do cluster específico para recuperação
+    $0 --cluster-id cluster-1-z1msjfjd --dry-run # Modo teste com cluster específico
+    $0 -c cluster-1-z1msjfjd -t /caminho/para/terraform
+
+IMPORTANTE:
+    O cluster_id fornecido deve ser DIFERENTE do cluster atual no Terraform.
+    Isso evita confusão entre snapshots do cluster antigo e do novo cluster limpo.
 
 VARIÁVEIS DE AMBIENTE:
     CLOUDSTACK_API_KEY      Chave de API do CloudStack
@@ -132,8 +134,8 @@ check_dependencies() {
     log_success "Verificação de dependências aprovada"
 }
 
-get_cluster_id_from_terraform() {
-    log_info "Auto-detectando ID do cluster da saída do Terraform..." >&2
+get_terraform_cluster_id() {
+    log_info "Obtendo ID do cluster atual do Terraform..." >&2
     
     # Mudar para o diretório do terraform temporariamente
     local current_dir=$(pwd)
@@ -142,7 +144,7 @@ get_cluster_id_from_terraform() {
     # Obter ID do cluster da saída do terraform
     local cluster_id
     if cluster_id=$(terraform output -raw cluster_id 2>/dev/null); then
-        log_success "ID do cluster auto-detectado: $cluster_id" >&2
+        log_success "ID do cluster atual no Terraform: $cluster_id" >&2
         cd "$current_dir"
         # Apenas enviar o valor do ID do cluster para stdout
         echo "$cluster_id"
@@ -159,6 +161,31 @@ get_cluster_id_from_terraform() {
         cd "$current_dir"
         exit 1
     fi
+}
+
+validate_cluster_id() {
+    log_info "Validando cluster_id fornecido..."
+    
+    # Obter o cluster_id atual do terraform
+    local terraform_cluster_id
+    terraform_cluster_id=$(get_terraform_cluster_id)
+    
+    # Validar que o cluster_id fornecido é diferente do atual
+    if [[ "$CLUSTER_ID" == "$terraform_cluster_id" ]]; then
+        log_error "O cluster_id fornecido ($CLUSTER_ID) é o mesmo do cluster atual no Terraform"
+        echo ""
+        echo "Para recuperação de desastre, você deve usar um cluster_id DIFERENTE do atual."
+        echo "Isso evita confusão entre snapshots do cluster antigo sendo recuperado"
+        echo "e snapshots que serão gerados pelo novo cluster limpo."
+        echo ""
+        echo "Cluster atual no Terraform: $terraform_cluster_id"
+        echo "Cluster fornecido para recuperação: $CLUSTER_ID"
+        echo ""
+        echo "Efetue a recuperação a partir de um cluster criado do zero, num novo estado do Terraform."
+        exit 1
+    fi
+    
+    log_success "Cluster_id validado: $CLUSTER_ID (diferente do atual: $terraform_cluster_id)"
 }
 
 check_cloudmonkey() {
@@ -405,10 +432,19 @@ main() {
         esac
     done
     
-    # Obter ID do cluster se não fornecido
+    # Verificar se cluster_id foi fornecido (obrigatório)
     if [[ -z "$CLUSTER_ID" ]]; then
-        CLUSTER_ID=$(get_cluster_id_from_terraform)
+        log_error "O cluster_id é obrigatório para recuperação de desastre"
+        echo ""
+        echo "Use a opção -c ou --cluster-id para especificar o cluster a ser recuperado."
+        echo "O cluster_id deve ser DIFERENTE do cluster atual no Terraform."
+        echo ""
+        show_usage
+        exit 1
     fi
+    
+    # Validar que o cluster_id é diferente do atual no Terraform
+    validate_cluster_id
     
     log_info "Iniciando recuperação de desastre para o cluster: $CLUSTER_ID"
     
