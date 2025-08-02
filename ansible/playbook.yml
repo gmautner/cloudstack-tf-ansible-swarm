@@ -15,6 +15,7 @@
     - name: Format data disk with ext4
       filesystem:
         fstype: ext4
+        resizefs: true
         dev: "{{ data_disk_device }}"
       when: data_disk.stat.exists
 
@@ -110,10 +111,6 @@
         fstype: ext4
         opts: defaults
         state: mounted
-      when: data_disk.stat.exists
-
-    - name: Resize ext4 filesystem to use full disk
-      command: resize2fs {{ data_disk_device }}
       when: data_disk.stat.exists
 
     - name: Calculate available memory for each host
@@ -275,6 +272,8 @@
         src: "{{ stacks_directory }}/"
         dest: /opt/stacks/
         delete: true
+        archive: false # don't copy owner and perms from localhost
+        recursive: true # needed because we turned off archive
       delegate_to: localhost
       become: false
 
