@@ -1,0 +1,30 @@
+all:
+  vars:
+    ansible_user: root
+    ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+    domain_suffix: cluster-1.giba.tech
+    public_ip: 191.252.224.12
+  children:
+    managers:
+      hosts:
+        manager-1:
+          ansible_host: 191.252.224.12
+          ansible_port: 22001
+          private_ip: 192.168.1.31
+    workers:
+      hosts:
+        mysql:
+          ansible_host: 191.252.224.12
+          ansible_port: 22004
+          private_ip: 192.168.1.45
+          labels:
+            db_category: "mysql"
+            type: "database"
+        wp:
+          ansible_host: 191.252.224.12
+          ansible_port: 22005
+          private_ip: 192.168.1.91
+    swarm:
+      children:
+        managers:
+        workers:
