@@ -50,7 +50,6 @@ resource "local_file" "ansible_inventory" {
         name       = cloudstack_instance.workers[worker_name].name
         port       = tolist(cloudstack_port_forward.worker_ssh[worker_name].forward)[0].public_port
         private_ip = cloudstack_instance.workers[worker_name].ip_address
-        role       = worker_name
         labels     = var.workers[worker_name].labels
       }
     ]

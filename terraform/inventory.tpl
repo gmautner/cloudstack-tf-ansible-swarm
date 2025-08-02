@@ -20,7 +20,6 @@ all:
           ansible_host: ${public_ip}
           ansible_port: ${worker.port}
           private_ip: ${worker.private_ip}
-          worker_role: ${worker.role}
 %{ if length(worker.labels) > 0 ~}
           labels:
 %{ for key, value in worker.labels ~}
