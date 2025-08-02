@@ -193,11 +193,6 @@ services:
 >
 > **Sem essa constraint, o Docker Swarm pode agendar o serviço em qualquer nó, resultando em perda de dados quando o container for executado em um nó diferente!**
 
-- **Discos de dados**: Montados em `/data` em cada nó
-- **Arquivos WordPress**: Armazenados em `/data/wp` no worker wp
-- **Dados MySQL**: Armazenados em `/data/mysql` no worker mysql
-- **Certificados SSL**: Armazenados em `/data/letsencrypt` no manager-1
-
 ## Solução de Problemas
 
 ### Problemas de Conexão SSH
