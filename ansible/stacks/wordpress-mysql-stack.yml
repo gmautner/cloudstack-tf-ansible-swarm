@@ -23,9 +23,9 @@ services:
       placement:
         constraints:
           - node.hostname == mysql
-      resources:
-        limits:
-          memory: '{{ hostvars["mysql"]["available_memory_mb"] }}m'
+      # resources:
+      #   limits:
+      #     memory: '{{ hostvars["mysql"]["available_memory_mb"] }}m'
 
   wordpress:
     image: wordpress:php8.3-apache
@@ -51,9 +51,9 @@ services:
         - traefik.http.routers.wordpress.entrypoints=websecure
         - traefik.http.routers.wordpress.tls.certresolver=letsencrypt
         - traefik.http.services.wordpress.loadbalancer.server.port=80
-      resources:
-        limits:
-          memory: '{{ hostvars["wp"]["available_memory_mb"] }}m'
+      # resources:
+      #   limits:
+      #     memory: '{{ hostvars["wp"]["available_memory_mb"] }}m'
 
 volumes:
   mysql_data:
