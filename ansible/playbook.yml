@@ -48,6 +48,7 @@
           - curl
           - gnupg
           - python3-pip
+          - nfs-common
         update_cache: true
 
     - name: Enable unattended upgrades
@@ -168,6 +169,76 @@
         remote_addrs:
           - "{{ hostvars[groups['managers'][0]]['private_ip'] }}:2377"
 
+- name: Setup NFS Server on manager-1
+  hosts: managers[0]
+  become: true
+  tasks:
+    - name: Install NFS server
+      apt:
+        name: nfs-kernel-server
+        state: present
+        update_cache: true
+
+    - name: Create NFS export directory
+      file:
+        path: /opt/nfs-stacks
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Configure NFS exports for managers (read-write)
+      lineinfile:
+        path: /etc/exports
+        line: "/opt/nfs-stacks {{ item }}(rw,sync,no_subtree_check,no_root_squash)"
+        create: true
+      loop: "{{ groups['managers'] | map('extract', hostvars, 'private_ip') | list }}"
+      notify: restart nfs server
+
+    - name: Configure NFS exports for workers (read-only)
+      lineinfile:
+        path: /etc/exports
+        line: "/opt/nfs-stacks {{ item }}(ro,sync,no_subtree_check,no_root_squash)"
+        create: true
+      loop: "{{ groups['workers'] | map('extract', hostvars, 'private_ip') | list }}"
+      notify: restart nfs server
+
+    - name: Start and enable NFS server
+      systemd:
+        name: nfs-kernel-server
+        state: started
+        enabled: true
+
+  handlers:
+    - name: restart nfs server
+      systemd:
+        name: nfs-kernel-server
+        state: restarted
+
+- name: Mount NFS shares on all nodes
+  hosts: all
+  become: true
+  tasks:
+    - name: Create NFS mount point
+      file:
+        path: /opt/stacks
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Determine NFS mount options based on node type
+      set_fact:
+        nfs_options: "{{ 'rw,sync' if inventory_hostname in groups['managers'] else 'ro,sync' }}"
+
+    - name: Mount NFS share
+      mount:
+        path: /opt/stacks
+        src: "{{ hostvars[groups['managers'][0]]['private_ip'] }}:/opt/nfs-stacks"
+        fstype: nfs
+        opts: "{{ nfs_options }},hard,intr"
+        state: mounted
+
 - name: Deploy Docker Stacks
   hosts: managers[0]
   become: true
@@ -195,22 +266,22 @@
         - secrets_config.docker_secrets is defined
         - lookup('env', item.env_var) != ""
 
-    - name: Copy entire stacks directory to manager
+    - name: Copy entire stacks directory to NFS mount
       synchronize:
         src: "{{ stacks_directory }}/"
-        dest: /tmp/stacks/
+        dest: /opt/stacks/
         delete: true
       delegate_to: localhost
       become: false
 
-    - name: Find docker-compose files on manager
+    - name: Find docker-compose files in NFS mount
       find:
-        paths: /tmp/stacks
+        paths: /opt/stacks
         patterns: "docker-compose.yaml,docker-compose.yml"
         recurse: true
       register: compose_files
 
-    - name: Deploy each stack
+    - name: Deploy each stack from NFS mount
       community.docker.docker_stack:
         name: "{{ item.path | dirname | basename }}"
         prune: true
