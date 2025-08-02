@@ -21,7 +21,7 @@ services:
       replicas: 1
       placement:
         constraints:
-          - node.role == manager
+          - node.labels.type == monitoring
       labels:
         - traefik.enable=true
         - traefik.http.routers.prometheus.rule=Host(`prometheus.cluster-1.giba.tech`)
