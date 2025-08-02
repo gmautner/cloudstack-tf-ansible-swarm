@@ -195,34 +195,27 @@
         - secrets_config.docker_secrets is defined
         - lookup('env', item.env_var) != ""
 
-    - name: Find stack files
-      find:
-        paths: "{{ stacks_directory }}"
-        patterns: "*.yml,*.yaml"
+    - name: Copy entire stacks directory to manager
+      synchronize:
+        src: "{{ stacks_directory }}/"
+        dest: /tmp/stacks/
+        delete: true
       delegate_to: localhost
       become: false
-      register: stack_files
 
-    - name: Create stacks directory on manager
-      file:
-        path: /tmp/stacks
-        state: directory
-        mode: '0755'
-
-    - name: Copy stack files to manager with template processing
-      template:
-        src: "{{ item.path }}"
-        dest: "/tmp/stacks/{{ item.path | basename }}"
-        mode: '0644'
-      with_items: "{{ stack_files.files }}"
-      when: stack_files.files | length > 0
+    - name: Find docker-compose files on manager
+      find:
+        paths: /tmp/stacks
+        patterns: "docker-compose.yaml,docker-compose.yml"
+        recurse: true
+      register: compose_files
 
     - name: Deploy each stack
       community.docker.docker_stack:
-        name: "{{ item.path | basename | splitext | first }}"
+        name: "{{ item.path | dirname | basename }}"
         prune: true
         compose:
-          - "/tmp/stacks/{{ item.path | basename }}"
+          - "{{ item.path }}"
         state: present
-      with_items: "{{ stack_files.files }}"
-      when: stack_files.files | length > 0
+      with_items: "{{ compose_files.files }}"
+      when: compose_files.files | length > 0

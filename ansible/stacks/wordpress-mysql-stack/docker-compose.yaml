@@ -5,7 +5,7 @@ services:
     image: mysql:8.4
     command: 
       - mysqld
-      - --innodb-buffer-pool-size={{ (hostvars["mysql"]["available_memory_mb"] | int * 0.6) | int }}M
+      - --innodb-buffer-pool-size=5000M # {{ (hostvars["mysql"]["available_memory_mb"] | int * 0.6) | int }}M
     environment:
       MYSQL_ROOT_PASSWORD_FILE: /run/secrets/mysql_root_password
       MYSQL_DATABASE: wordpress
@@ -47,13 +47,10 @@ services:
           - node.hostname == wp
       labels:
         - traefik.enable=true
-        - traefik.http.routers.wordpress.rule=Host(`portal.{{ domain_suffix }}`)
+        - traefik.http.routers.wordpress.rule=Host(`portal.cluster-1.giba.tech`)
         - traefik.http.routers.wordpress.entrypoints=websecure
         - traefik.http.routers.wordpress.tls.certresolver=letsencrypt
         - traefik.http.services.wordpress.loadbalancer.server.port=80
-      # resources:
-      #   limits:
-      #     memory: '{{ hostvars["wp"]["available_memory_mb"] }}m'
 
 volumes:
   mysql_data:
