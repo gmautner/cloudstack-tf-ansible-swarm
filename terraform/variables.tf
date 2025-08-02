@@ -32,8 +32,6 @@ variable "cluster_name" {
   type        = string
 }
 
-
-
 variable "workers" {
   description = "Map of worker nodes to create"
   type = map(object({
