@@ -219,13 +219,20 @@
   hosts: all
   become: true
   tasks:
-    - name: Create NFS mount point
+    - name: Check if NFS mount point is already mounted
+      command: mountpoint -q /opt/stacks
+      register: mount_check
+      failed_when: false
+      changed_when: false
+
+    - name: Create NFS mount point only if not already mounted
       file:
         path: /opt/stacks
         state: directory
         owner: root
         group: root
         mode: '0755'
+      when: mount_check.rc != 0
 
     - name: Determine NFS mount options based on node type
       set_fact:

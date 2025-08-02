@@ -3,9 +3,6 @@ version: '3.8'
 services:
   mysql:
     image: mysql:8.4
-    command: 
-      - mysqld
-      - --innodb-buffer-pool-size=5000M # {{ (hostvars["mysql"]["available_memory_mb"] | int * 0.6) | int }}M
     environment:
       MYSQL_ROOT_PASSWORD_FILE: /run/secrets/mysql_root_password
       MYSQL_DATABASE: wordpress
@@ -13,6 +10,7 @@ services:
       MYSQL_PASSWORD_FILE: /run/secrets/wordpress_db_password
     volumes:
       - mysql_data:/var/lib/mysql
+      - ./config/my.cnf:/etc/mysql/conf.d/my.cnf:ro
     networks:
       - wp_network
     secrets:
