@@ -170,6 +170,29 @@ services:
 
 ## Persistência de Dados
 
+> **⚠️ ATENÇÃO CRÍTICA: Named Volumes no Docker Swarm**
+>
+> **SE você usar named volumes no Docker Swarm, eles serão provisionados por padrão no disco de dados local anexado a cada nó.** Para garantir a persistência dos dados entre reinicializações e evitar perda de dados, é **OBRIGATÓRIO** restringir o serviço a um nó específico usando o filtro `node.hostname` nas constraints de placement.
+>
+> **Exemplo:**
+>
+> ```yaml
+> services:
+>   meu-servico:
+>     image: postgres:15
+>     volumes:
+>       - dados_postgres:/var/lib/postgresql/data
+>     deploy:
+>       placement:
+>         constraints:
+>           - node.hostname == nome-do-no-especifico
+>
+> volumes:
+>   dados_postgres:
+> ```
+>
+> **Sem essa constraint, o Docker Swarm pode agendar o serviço em qualquer nó, resultando em perda de dados quando o container for executado em um nó diferente!**
+
 - **Discos de dados**: Montados em `/data` em cada nó
 - **Arquivos WordPress**: Armazenados em `/data/wp` no worker wp
 - **Dados MySQL**: Armazenados em `/data/mysql` no worker mysql
