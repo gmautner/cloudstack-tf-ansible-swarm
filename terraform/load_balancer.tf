@@ -1,10 +1,14 @@
 # Load balancer rules for HTTP and HTTPS traffic to manager-1
+# Using protocol = "tcp-proxy" to enable proxy protocol support
+# This preserves the original client IP information for Traefik
+# Traefik is configured to accept proxy protocol headers from trusted IPs
 resource "cloudstack_loadbalancer_rule" "http" {
   name          = "http-lb"
-  description   = "Load balancer rule for HTTP traffic"
+  description   = "Load balancer rule for HTTP traffic with proxy protocol"
   ip_address_id = cloudstack_ipaddress.main.id
   algorithm     = "roundrobin"
   network_id    = cloudstack_network.main.id
+  protocol      = "tcp-proxy"
   public_port   = 80
   private_port  = 80
   member_ids    = [cloudstack_instance.managers[0].id]
@@ -12,10 +16,11 @@ resource "cloudstack_loadbalancer_rule" "http" {
 
 resource "cloudstack_loadbalancer_rule" "https" {
   name          = "https-lb"
-  description   = "Load balancer rule for HTTPS traffic"
+  description   = "Load balancer rule for HTTPS traffic with proxy protocol"
   ip_address_id = cloudstack_ipaddress.main.id
   algorithm     = "roundrobin"
   network_id    = cloudstack_network.main.id
+  protocol      = "tcp-proxy"
   public_port   = 443
   private_port  = 443
   member_ids    = [cloudstack_instance.managers[0].id]

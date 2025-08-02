@@ -14,6 +14,14 @@ services:
       - --providers.swarm.network=ingress_network
       - --entrypoints.web.address=:80
       - --entrypoints.websecure.address=:443
+      # Enable proxy protocol support for both HTTP and HTTPS entrypoints
+      # Trust CloudStack network (192.168.1.0/24) AND Docker internal networks
+      # Docker Swarm uses 10.0.0.0/8 and 172.16.0.0/12 for internal routing
+      - --entrypoints.web.proxyProtocol.trustedIPs=192.168.1.0/24,10.0.0.0/8,172.16.0.0/12
+      - --entrypoints.websecure.proxyProtocol.trustedIPs=192.168.1.0/24,10.0.0.0/8,172.16.0.0/12
+      # Configure forwarded headers for the same network ranges
+      - --entrypoints.web.forwardedHeaders.trustedIPs=192.168.1.0/24,10.0.0.0/8,172.16.0.0/12
+      - --entrypoints.websecure.forwardedHeaders.trustedIPs=192.168.1.0/24,10.0.0.0/8,172.16.0.0/12
       - --certificatesresolvers.letsencrypt.acme.tlschallenge=true
       - --certificatesresolvers.letsencrypt.acme.email=admin@cluster-1.giba.tech
       - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
