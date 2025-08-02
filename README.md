@@ -66,7 +66,7 @@ Aponte o DNS wildcard do seu domínio (`*.seudominio.com`) para o IP público mo
 
 ### 5. Implantar Docker Swarm e Aplicações
 
-O inventário do Ansible é gerado automaticamente pelo Terraform em `ansible/inventory.ini`.
+O inventário do Ansible é gerado automaticamente pelo Terraform em `ansible/inventory.yml`.
 
 ```bash
 cd ansible
@@ -75,7 +75,7 @@ cd ansible
 ansible-galaxy collection install -r collections/requirements.yml
 
 # Implantar Docker Swarm
-ansible-playbook -i inventory.ini playbook.yml
+ansible-playbook -i inventory.yml playbook.yml
 ```
 
 ## Configuração
@@ -133,6 +133,46 @@ Para garantir implantações consistentes, este projeto trava as versões das de
 
 - **Terraform**: Versão do provider CloudStack fixada em `terraform/main.tf`
 - **Ansible**: Versões das coleções especificadas em `ansible/collections/requirements.yml`
+
+## Labels de Nós do Swarm
+
+Os nós worker podem receber labels personalizados que são úteis para constraints de placement de serviços Docker. Configure labels opcionais no arquivo `terraform.tfvars`:
+
+```hcl
+workers = {
+  "wp" = { 
+    plan = "medium", 
+    data_size_gb = 105,
+    labels = {
+      "type" = "web"
+      "service" = "wordpress"
+      "zone" = "public"
+    }
+  },
+  "mysql" = { 
+    plan = "large", 
+    data_size_gb = 90,
+    labels = {
+      "type" = "database"
+      "service" = "mysql"
+      "zone" = "private"
+    }
+  },
+}
+```
+
+Os labels são aplicados automaticamente pelo Ansible durante a configuração do swarm e podem ser usados em docker-compose.yml para placement constraints:
+
+```yaml
+services:
+  wordpress:
+    # ... outras configurações
+    deploy:
+      placement:
+        constraints:
+          - node.labels.type == web
+          - node.labels.service == wordpress
+```
 
 ## Persistência de Dados
 

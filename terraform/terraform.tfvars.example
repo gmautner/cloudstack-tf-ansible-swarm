@@ -15,6 +15,16 @@ domain_suffix = "example.com"
 
 # Workers configuration
 workers = {
-  "wp" = { plan = "micro", data_size_gb = 75 },
-  "mysql" = { plan = "medium", data_size_gb = 90 },
+  "wp" = { 
+    plan = "micro", 
+    data_size_gb = 75,
+  },
+  "mysql" = { 
+    plan = "medium", 
+    data_size_gb = 90,
+    labels = {
+      "type" = "database"
+      "db_category" = "mysql"
+    }
+  },
 }

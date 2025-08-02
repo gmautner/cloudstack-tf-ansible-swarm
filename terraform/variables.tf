@@ -42,6 +42,7 @@ variable "workers" {
   type = map(object({
     plan         = string
     data_size_gb = number
+    labels       = optional(map(string), {})
   }))
 }
 

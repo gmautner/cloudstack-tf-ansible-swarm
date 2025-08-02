@@ -169,6 +169,18 @@
         remote_addrs:
           - "{{ hostvars[groups['managers'][0]]['private_ip'] }}:2377"
 
+- name: Apply node labels
+  hosts: workers
+  become: true
+  tasks:
+    - name: Apply labels to this worker node
+      community.docker.docker_node:
+        hostname: "{{ inventory_hostname }}"
+        labels: "{{ labels }}"
+        labels_state: replace
+      delegate_to: "{{ groups['managers'][0] }}"
+      when: labels is defined and labels | length > 0
+
 - name: Setup NFS Server on manager-1
   hosts: managers[0]
   become: true

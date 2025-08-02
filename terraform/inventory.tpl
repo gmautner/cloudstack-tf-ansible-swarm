@@ -1,19 +1,34 @@
-[all:vars]
-ansible_user=root
-ansible_ssh_common_args='-o StrictHostKeyChecking=no'
-domain_suffix=${domain_suffix}
-public_ip=${public_ip}
-
-[managers]
+all:
+  vars:
+    ansible_user: root
+    ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+    domain_suffix: ${domain_suffix}
+    public_ip: ${public_ip}
+  children:
+    managers:
+      hosts:
 %{ for manager in managers ~}
-${manager.name} ansible_host=${public_ip} ansible_port=${manager.port} private_ip=${manager.private_ip}
+        ${manager.name}:
+          ansible_host: ${public_ip}
+          ansible_port: ${manager.port}
+          private_ip: ${manager.private_ip}
 %{ endfor ~}
-
-[workers]
+    workers:
+      hosts:
 %{ for worker in workers ~}
-${worker.name} ansible_host=${public_ip} ansible_port=${worker.port} private_ip=${worker.private_ip}
+        ${worker.name}:
+          ansible_host: ${public_ip}
+          ansible_port: ${worker.port}
+          private_ip: ${worker.private_ip}
+          worker_role: ${worker.role}
+%{ if length(worker.labels) > 0 ~}
+          labels:
+%{ for key, value in worker.labels ~}
+            ${key}: "${value}"
 %{ endfor ~}
-
-[swarm:children]
-managers
-workers
+%{ endif ~}
+%{ endfor ~}
+    swarm:
+      children:
+        managers:
+        workers:
