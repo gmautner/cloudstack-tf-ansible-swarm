@@ -2,7 +2,7 @@ all:
   vars:
     ansible_user: root
     ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
-    domain_suffix: ${domain_suffix}
+
     public_ip: ${public_ip}
   children:
     managers:

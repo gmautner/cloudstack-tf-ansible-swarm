@@ -2,7 +2,7 @@ all:
   vars:
     ansible_user: root
     ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
-    domain_suffix: cluster-1.giba.tech
+
     public_ip: 191.252.224.12
   children:
     managers:

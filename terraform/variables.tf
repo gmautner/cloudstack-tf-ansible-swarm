@@ -32,10 +32,7 @@ variable "cluster_name" {
   type        = string
 }
 
-variable "domain_suffix" {
-  description = "Domain suffix for WordPress and Traefik access"
-  type        = string
-}
+
 
 variable "workers" {
   description = "Map of worker nodes to create"

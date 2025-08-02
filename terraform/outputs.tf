@@ -4,11 +4,7 @@ output "public_ip" {
   value       = cloudstack_ipaddress.main.ip_address
 }
 
-# Output domain suffix for use in Ansible
-output "domain_suffix" {
-  description = "Domain suffix for WordPress and Traefik access"
-  value       = var.domain_suffix
-}
+
 
 # Output calculated manager service offering
 output "manager_service_offering" {
@@ -53,7 +49,6 @@ resource "local_file" "ansible_inventory" {
         labels     = var.workers[worker_name].labels
       }
     ]
-    domain_suffix = var.domain_suffix
   })
   filename = "${path.module}/../ansible/inventory.yml"
 }

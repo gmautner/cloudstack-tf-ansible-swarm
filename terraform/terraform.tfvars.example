@@ -4,8 +4,7 @@ ssh_public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC... your-public-key-her
 # Cluster name
 cluster_name = "cluster-1"
 
-# Domain suffix for WordPress and Traefik access
-domain_suffix = "example.com"
+
 
 # Opcional: Restringir acesso SSH (default: ["0.0.0.0/0"])
 # allowed_ssh_cidr_blocks = ["203.0.113.0/24", "198.51.100.0/24"]

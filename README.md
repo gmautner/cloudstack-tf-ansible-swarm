@@ -17,7 +17,6 @@ A infraestrutura consiste em:
 - Ansible com coleção `community.docker`
 - As credenciais da API CloudStack devem ser fornecidas através das variáveis de ambiente `CLOUDSTACK_API_URL`, `CLOUDSTACK_API_KEY` e `CLOUDSTACK_SECRET_KEY`.
 - Par de chaves SSH
-- Nome de domínio com acesso ao gerenciamento de DNS
 
 ## Início Rápido
 
@@ -37,7 +36,7 @@ Copie o arquivo de exemplo e edite as variáveis em `terraform/terraform.tfvars`
 
 ```bash
 cp terraform/terraform.tfvars.example terraform/terraform.tfvars
-# Edite terraform/terraform.tfvars com sua chave pública SSH e domínio
+# Edite terraform/terraform.tfvars com sua chave pública SSH
 ```
 
 ### 3. Implantar Infraestrutura
@@ -60,11 +59,7 @@ terraform plan
 terraform apply
 ```
 
-### 4. Configurar DNS
-
-Aponte o DNS wildcard do seu domínio (`*.seudominio.com`) para o IP público mostrado na saída do Terraform.
-
-### 5. Implantar Docker Swarm e Aplicações
+### 4. Implantar Docker Swarm e Aplicações
 
 O inventário do Ansible é gerado automaticamente pelo Terraform em `ansible/inventory.yml`.
 
@@ -85,7 +80,6 @@ ansible-playbook -i inventory.yml playbook.yml
 | Variável | Descrição | Padrão |
 |----------|-----------|--------|
 | `ssh_public_key` | Chave pública SSH para acesso às instâncias | **Obrigatório** |
-| `domain_suffix` | Sufixo de domínio para serviços | **Obrigatório** |
 | `network_offering_name` | Oferta de rede CloudStack | `"Default Guest Network"` |
 | `template_name` | Nome do template do SO | `"Ubuntu 24.04 (Noble Numbat)"` |
 | `disk_offering_name` | Oferta de disco de dados | `"data.disk.general"` |
@@ -106,8 +100,8 @@ ansible-playbook -i inventory.yml playbook.yml
 
 Após a implantação, os seguintes serviços estarão disponíveis:
 
-- **WordPress**: `https://portal.seudominio.com`
-- **Dashboard Traefik**: `https://traefik.seudominio.com`
+- **WordPress**: `https://portal.cluster-1.giba.tech` (ou o domínio configurado nos arquivos Docker Compose)
+- **Dashboard Traefik**: `https://traefik.cluster-1.giba.tech` (ou o domínio configurado nos arquivos Docker Compose)
 
 ## Notas Importantes de Segurança
 
