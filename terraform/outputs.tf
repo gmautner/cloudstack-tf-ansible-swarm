@@ -1,7 +1,15 @@
-# Output the public IP address
-output "public_ip" {
-  description = "Public IP address for the infrastructure"
+# Output the main public IP address (dedicated for SSH access)
+output "main_public_ip" {
+  description = "Main public IP address used for SSH access and management"
   value       = cloudstack_ipaddress.main.ip_address
+}
+
+# Output all service-specific public IP addresses
+output "service_public_ips" {
+  description = "Map of public IP addresses for each service"
+  value = {
+    for ip_name, ip_resource in cloudstack_ipaddress.public_ips : ip_name => ip_resource.ip_address
+  }
 }
 
 

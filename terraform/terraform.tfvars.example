@@ -1,7 +1,7 @@
-# SSH public key for instance access
-ssh_public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC... your-public-key-here"
+# Chave pública SSH para acesso às instâncias
+ssh_public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC... sua-chave-publica-aqui"
 
-# Cluster name
+# Nome do cluster
 cluster_name = "cluster-1"
 
 
@@ -12,7 +12,7 @@ cluster_name = "cluster-1"
 # Opcional: Número de managers do Docker Swarm (default: 3, permitido: 1 ou 3)
 # manager_count = 3
 
-# Workers configuration
+# Configuração dos workers
 workers = {
   "wp" = { 
     plan = "micro", 
@@ -26,4 +26,37 @@ workers = {
       "db_category" = "mysql"
     }
   },
+}
+
+# Configuração de IPs públicos e load balancers
+# Cada chave cria um endereço IP público separado
+public_ips = {
+  # Traefik reverse proxy - usa tcp-proxy para preservar IP do cliente
+  traefik = {
+    ports = [
+      {
+        public        = 80
+        private       = 80
+        protocol      = "tcp-proxy"
+        allowed_cidrs = ["0.0.0.0/0"]
+      },
+      {
+        public        = 443
+        private       = 443
+        protocol      = "tcp-proxy"
+        allowed_cidrs = ["0.0.0.0/0"]
+      }
+    ]
+  }
+  # Exemplo: Acesso a banco de dados (descomente e modifique conforme necessário)
+  # mysql = {
+  #   ports = [
+  #     {
+  #       public        = 3306
+  #       private       = 3306
+  #       protocol      = "tcp"
+  #       allowed_cidrs = ["177.188.158.169/32", "191.252.224.0/24"]
+  #     }
+  #   ]
+  # }
 }

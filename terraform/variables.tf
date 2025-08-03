@@ -51,3 +51,24 @@ variable "manager_count" {
     error_message = "O número de managers deve ser 1 ou 3."
   }
 }
+
+variable "public_ips" {
+  description = "Map of public IPs and their port configurations"
+  type = map(object({
+    ports = list(object({
+      public        = number
+      private       = number
+      protocol      = string # tcp, udp, or tcp-proxy
+      allowed_cidrs = list(string)
+    }))
+  }))
+
+  validation {
+    condition = alltrue([
+      for ip_name, ip_config in var.public_ips : alltrue([
+        for port in ip_config.ports : contains(["tcp", "udp", "tcp-proxy"], port.protocol)
+      ])
+    ])
+    error_message = "Protocol must be one of: tcp, udp, tcp-proxy."
+  }
+}

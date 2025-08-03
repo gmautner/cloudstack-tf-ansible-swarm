@@ -34,3 +34,33 @@ workers = {
     }
   },
 }
+
+# Public IPs and load balancer configuration
+public_ips = {
+  traefik = {
+    ports = [
+      {
+        public        = 80
+        private       = 80
+        protocol      = "tcp-proxy"
+        allowed_cidrs = ["0.0.0.0/0"]
+      },
+      {
+        public        = 443
+        private       = 443
+        protocol      = "tcp-proxy"
+        allowed_cidrs = ["0.0.0.0/0"]
+      }
+    ]
+  }
+  prometheus = {
+    ports = [
+      {
+        public        = 9090
+        private       = 9090
+        protocol      = "tcp"
+        allowed_cidrs = ["177.188.158.169/32", "191.252.224.0/24"]
+      }
+    ]
+  }
+}

@@ -1,32 +1,24 @@
-# Load balancer rules for HTTP and HTTPS traffic to manager-1
-# Using protocol = "tcp-proxy" to enable proxy protocol support
-# This preserves the original client IP information for Traefik
-# Traefik is configured to accept proxy protocol headers from trusted IPs
-resource "cloudstack_loadbalancer_rule" "http" {
-  name          = "http-lb"
-  description   = "Load balancer rule for HTTP traffic with proxy protocol"
-  ip_address_id = cloudstack_ipaddress.main.id
-  algorithm     = "roundrobin"
-  network_id    = cloudstack_network.main.id
-  protocol      = "tcp-proxy"
-  public_port   = 80
-  private_port  = 80
-  member_ids    = [cloudstack_instance.managers[0].id]
-}
+# Dynamic load balancer rules for each port configuration
+# Using all workers as members because Docker Swarm creates a VIP
+# that routes traffic to the appropriate services regardless of destination
+resource "cloudstack_loadbalancer_rule" "ports" {
+  for_each = {
+    for idx, port in local.all_ports : "${port.ip_name}-${port.public_port}" => port
+  }
 
-resource "cloudstack_loadbalancer_rule" "https" {
-  name          = "https-lb"
-  description   = "Load balancer rule for HTTPS traffic with proxy protocol"
-  ip_address_id = cloudstack_ipaddress.main.id
+  name          = "${each.value.ip_name}-${each.value.public_port}-lb"
+  description   = "Load balancer rule for ${each.value.ip_name} port ${each.value.public_port} (${each.value.protocol})"
+  ip_address_id = cloudstack_ipaddress.public_ips[each.value.ip_name].id
   algorithm     = "roundrobin"
   network_id    = cloudstack_network.main.id
-  protocol      = "tcp-proxy"
-  public_port   = 443
-  private_port  = 443
-  member_ids    = [cloudstack_instance.managers[0].id]
+  protocol      = each.value.protocol
+  public_port   = each.value.public_port
+  private_port  = each.value.private_port
+  member_ids    = [for worker in cloudstack_instance.workers : worker.id]
 }
 
 # Port forwarding rules for SSH access to managers (22001-22003)
+# Using the main public IP for SSH access (separate from service IPs)
 resource "cloudstack_port_forward" "manager_ssh" {
   count = var.manager_count
 
@@ -41,6 +33,7 @@ resource "cloudstack_port_forward" "manager_ssh" {
 }
 
 # Port forwarding rules for SSH access to workers (starting at 22004)
+# Using the main public IP for SSH access (separate from service IPs)
 resource "cloudstack_port_forward" "worker_ssh" {
   for_each = var.workers
 
