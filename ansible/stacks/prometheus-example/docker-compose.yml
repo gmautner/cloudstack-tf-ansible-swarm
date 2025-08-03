@@ -35,5 +35,3 @@ volumes:
 networks:
   monitoring:
     driver: overlay
-  ingress_network:
-    external: true
