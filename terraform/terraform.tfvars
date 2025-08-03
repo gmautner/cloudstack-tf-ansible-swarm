@@ -14,20 +14,20 @@ manager_count = 1
 
 # Workers configuration
 workers = {
-  "wp"    = { 
-    plan = "medium", 
+  "wp" = {
+    plan         = "medium",
     data_size_gb = 120,
   },
-  "mysql" = { 
-    plan = "large", 
+  "mysql" = {
+    plan         = "large",
     data_size_gb = 90,
     labels = {
-      "type" = "database"
+      "type"        = "database"
       "db_category" = "mysql"
     }
   },
   "prometheus" = {
-    plan = "medium",
+    plan         = "medium",
     data_size_gb = 50,
     labels = {
       "type" = "monitoring"
