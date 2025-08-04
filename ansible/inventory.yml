@@ -13,22 +13,28 @@ all:
           private_ip: 192.168.1.31
     workers:
       hosts:
-        mysql:
+        dockprom:
           ansible_host: 191.252.224.12
           ansible_port: 22004
+          private_ip: 192.168.1.90
+          labels:
+            role: "monitoring"
+        mysql:
+          ansible_host: 191.252.224.12
+          ansible_port: 22005
           private_ip: 192.168.1.45
           labels:
             db_category: "mysql"
             type: "database"
         prometheus:
           ansible_host: 191.252.224.12
-          ansible_port: 22005
+          ansible_port: 22006
           private_ip: 192.168.1.70
           labels:
             type: "monitoring"
         wp:
           ansible_host: 191.252.224.12
-          ansible_port: 22006
+          ansible_port: 22007
           private_ip: 192.168.1.91
     swarm:
       children:
