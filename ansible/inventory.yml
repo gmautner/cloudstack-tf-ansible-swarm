@@ -26,15 +26,9 @@ all:
           labels:
             db_category: "mysql"
             type: "database"
-        prometheus:
-          ansible_host: 191.252.224.12
-          ansible_port: 22006
-          private_ip: 192.168.1.70
-          labels:
-            type: "monitoring"
         wp:
           ansible_host: 191.252.224.12
-          ansible_port: 22007
+          ansible_port: 22006
           private_ip: 192.168.1.91
     swarm:
       children:
