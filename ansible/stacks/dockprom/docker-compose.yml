@@ -1,7 +1,10 @@
+# Adaptado de https://github.com/stefanprodan/dockprom
+# Acompanhe commits deste repositório para atualizar imagens
 version: '3.8'
 
 networks:
   monitor-net:
+    name: monitor-net
     driver: overlay
 
 volumes:
