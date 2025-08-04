@@ -1,37 +1,3 @@
 version: '3.8'
 
-services:
-  prometheus:
-    image: prom/prometheus:latest
-    ports:
-      - "9090:9090"
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/etc/prometheus/console_libraries'
-      - '--web.console.templates=/etc/prometheus/consoles'
-    volumes:
-      # This relative path mapping will now work across all swarm nodes!
-      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - ./config/rules/:/etc/prometheus/rules/:ro
-      - prometheus_data:/prometheus
-    networks:
-      - monitoring
-    deploy:
-      replicas: 1
-      placement:
-        constraints:
-          - node.labels.type == monitoring
-      labels:
-        - traefik.enable=true
-        - traefik.http.routers.prometheus.rule=Host(`prometheus.cluster-1.giba.tech`)
-        - traefik.http.routers.prometheus.entrypoints=websecure
-        - traefik.http.routers.prometheus.tls.certresolver=letsencrypt
-        - traefik.http.services.prometheus.loadbalancer.server.port=9090
-
-volumes:
-  prometheus_data:
-
-networks:
-  monitoring:
-    driver: overlay
+# empty to prune

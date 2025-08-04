@@ -33,6 +33,13 @@ workers = {
       "type" = "monitoring"
     }
   },
+  "dockprom" = {
+    plan         = "large",
+    data_size_gb = 100,
+    labels = {
+      "role" = "monitoring"
+    }
+  },
 }
 
 # Public IPs and load balancer configuration
@@ -53,13 +60,37 @@ public_ips = {
       }
     ]
   }
-  prometheus = {
+  dockprom = {
     ports = [
+      {
+        public        = 3000
+        private       = 3000
+        protocol      = "tcp"
+        allowed_cidrs = ["0.0.0.0/0"]
+      },
+      {
+        public        = 8080
+        private       = 8080
+        protocol      = "tcp"
+        allowed_cidrs = ["0.0.0.0/0"]
+      },
       {
         public        = 9090
         private       = 9090
         protocol      = "tcp"
-        allowed_cidrs = ["177.188.158.169/32", "191.252.224.0/24"]
+        allowed_cidrs = ["0.0.0.0/0"]
+      },
+      {
+        public        = 9093
+        private       = 9093
+        protocol      = "tcp"
+        allowed_cidrs = ["0.0.0.0/0"]
+      },
+      {
+        public        = 9091
+        private       = 9091
+        protocol      = "tcp"
+        allowed_cidrs = ["0.0.0.0/0"]
       }
     ]
   }
