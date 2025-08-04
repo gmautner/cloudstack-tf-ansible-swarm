@@ -26,13 +26,6 @@ workers = {
       "db_category" = "mysql"
     }
   },
-  "prometheus" = {
-    plan         = "medium",
-    data_size_gb = 50,
-    labels = {
-      "type" = "monitoring"
-    }
-  },
   "dockprom" = {
     plan         = "large",
     data_size_gb = 100,
