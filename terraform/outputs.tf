@@ -38,6 +38,17 @@ output "cluster_id" {
   value       = local.cluster_id
 }
 
+# Output snapshot schedules for reference
+output "snapshot_schedules" {
+  description = "Calculated snapshot schedules for worker data disks"
+  value = {
+    hourly  = local.schedule_hourly
+    daily   = local.schedule_daily
+    weekly  = local.schedule_weekly
+    monthly = local.schedule_monthly
+  }
+}
+
 # Generate Ansible inventory file
 resource "local_file" "ansible_inventory" {
   content = templatefile("${path.module}/inventory.tpl", {
