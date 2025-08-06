@@ -5,9 +5,6 @@
 
 set -euo pipefail
 
-# Configuration
-CLOUDSTACK_API_URL="${CLOUDSTACK_API_URL:-https://painel-cloud.locaweb.com.br/client/api}"
-
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -91,6 +88,11 @@ check_dependencies() {
     log_info "Verificando dependências..."
     
     # Verificar variáveis de ambiente obrigatórias
+    if [[ -z "${CLOUDSTACK_API_URL:-}" ]]; then
+        log_error "Variável de ambiente CLOUDSTACK_API_URL é obrigatória"
+        exit 1
+    fi
+    
     if [[ -z "${CLOUDSTACK_API_KEY:-}" ]]; then
         log_error "Variável de ambiente CLOUDSTACK_API_KEY é obrigatória"
         exit 1
@@ -314,7 +316,6 @@ get_worker_names() {
 
 recover_worker_snapshots() {
     local worker_names="$1"
-    local vm_ids="$2"
     
     log_info "Recuperando snapshots dos workers..."
     
@@ -328,7 +329,7 @@ recover_worker_snapshots() {
         
         # Get worker VM ID
         local worker_vm_id
-        local vm_cmd="cmk list virtualmachines | jq -r '.virtualmachine[]? | select(.tags[]? | .key==\"cluster_id\" and .value==\"$CLUSTER_ID\") | select(.tags[]? | .key==\"name\" and .value==\"$worker_name\") | .id'"
+        local vm_cmd="cmk list virtualmachines | jq -r '.virtualmachine[]? | select(.tags[]? | .key==\"cluster_id\" and .value==\"$CLUSTER_ID\") | select(.name==\"$worker_name\") | .id'"
         
         if [[ "$DRY_RUN" == "true" ]]; then
             worker_vm_id="vm-dummy-$worker_name"
@@ -337,7 +338,7 @@ recover_worker_snapshots() {
         fi
         
         # Listar snapshots para este worker
-        local snapshots_cmd="cmk list snapshots | jq '.snapshot[]? | select(.tags[]? | .key==\"cluster_id\" and .value==\"$CLUSTER_ID\") | select(.tags[]? | .key==\"role\" and .value==\"worker\") | select(.tags[]? | .key==\"name\" and .value==\"$worker_name\") | {id: .id, created: .created}' | jq -s 'sort_by(.created)'"
+        local snapshots_cmd="cmk list snapshots | jq '.snapshot[]? | select(.tags[]? | .key==\"cluster_id\" and .value==\"$CLUSTER_ID\") | select(.name | test(\"^${worker_name}_${worker_name}-data\")) | {id: .id, created: .created}' | jq -s 'sort_by(.created)'"
         
         log_info "Snapshots para $worker_name:"
         if [[ "$DRY_RUN" == "true" ]]; then
@@ -348,7 +349,7 @@ recover_worker_snapshots() {
         fi
         
         # Get most recent snapshot ID
-        local latest_snapshot_cmd="cmk list snapshots | jq '.snapshot[]? | select(.tags[]? | .key==\"cluster_id\" and .value==\"$CLUSTER_ID\") | select(.tags[]? | .key==\"role\" and .value==\"worker\") | select(.tags[]? | .key==\"name\" and .value==\"$worker_name\")' | jq -sr 'sort_by(.created) | last | .id'"
+        local latest_snapshot_cmd="cmk list snapshots | jq '.snapshot[]? | select(.tags[]? | .key==\"cluster_id\" and .value==\"$CLUSTER_ID\") | select(.name | test(\"^${worker_name}_${worker_name}-data\"))' | jq -sr 'sort_by(.created) | last | .id'"
         
         local latest_snapshot_id
         if [[ "$DRY_RUN" == "true" ]]; then
@@ -365,7 +366,7 @@ recover_worker_snapshots() {
         log_info "Snapshot mais recente para $worker_name: $latest_snapshot_id"
         
         # Criar volume a partir do snapshot
-        local volume_name="$worker_name-recovered-$timestamp"
+        local volume_name="${worker_name}_${worker_name}-data-recovered-${timestamp}"
         execute_command "cmk create volume name='$volume_name' snapshotid='$latest_snapshot_id' virtualmachineid='$worker_vm_id'" "Criando volume a partir do snapshot para $worker_name"
         
         # Get the new volume ID
@@ -470,7 +471,7 @@ main() {
     local worker_names
     worker_names=$(get_worker_names)
     
-    recover_worker_snapshots "$worker_names" "$vm_ids"
+    recover_worker_snapshots "$worker_names"
     
     log_success "Recuperação de desastre concluída com sucesso!"
     

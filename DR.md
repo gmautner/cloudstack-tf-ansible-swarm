@@ -57,14 +57,14 @@ cmk detach volume id=<id>
   - Find its snapshots (substitute the name of the worker VM):
 
   ```bash
-  cmk list snapshots | jq '.snapshot[] | select(.tags[]? | .key=="cluster_id" and .value=="cluster-1-z1msjfjd") | select(.tags[]? | .key=="role" and .value=="worker") | select(.tags[]? | .key=="name" and .value=="mysql") | {id: .id, created: .created}' | jq -s 'sort_by(.created)'
+  cmk list snapshots | jq '.snapshot[] | select(.tags[]? | .key=="cluster_id" and .value=="cluster-1-z1msjfjd") | select(.name | test("^mysql_mysql-data")) | {id: .id, created: .created}' | jq -s 'sort_by(.created)'
   ```
 
   - Report the snapshots on the console
   - Retrieve the id of the most recent snapshot
 
   ```bash
-  cmk list snapshots | jq '.snapshot[] | select(.tags[]? | .key=="cluster_id" and .value=="cluster-1-z1msjfjd") | select(.tags[]? | .key=="role" and .value=="worker") | select(.tags[]? | .key=="name" and .value=="mysql")' | jq -sr 'sort_by(.created) | last | .id'
+  cmk list snapshots | jq '.snapshot[] | select(.tags[]? | .key=="cluster_id" and .value=="cluster-1-z1msjfjd") | select(.name | test("^mysql_mysql-data"))' | jq -sr 'sort_by(.created) | last | .id'
   ```
 
   - Restore the most recent snapshot of the respective VM and attach to it (timestamps shouldn't contain special characters, it can be for example `20250731-120000-0300`):
