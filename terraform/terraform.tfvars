@@ -84,5 +84,15 @@ public_ips = {
         allowed_cidrs = ["0.0.0.0/0"]
       }
     ]
+  },
+  portainer = {
+    ports = [
+      {
+        public        = 9443
+        private       = 9443
+        protocol      = "tcp"
+        allowed_cidrs = ["0.0.0.0/0"]
+      }
+    ]
   }
 }
