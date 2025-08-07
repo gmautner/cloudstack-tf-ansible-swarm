@@ -36,24 +36,34 @@ log_error() {
 
 show_usage() {
     cat << EOF
-Uso: $0 -c CLUSTER_ID [OPÇÕES]
+Uso: $0 -c SOURCE_CLUSTER_ID [OPÇÕES]
 
 Script de Recuperação de Desastres para Cluster Docker Swarm no CloudStack
 
+CONCEITO:
+    Este script recupera dados de um cluster ANTIGO (destruído) para um cluster NOVO (atual).
+    
+    - CLUSTER DE ORIGEM (-c): O cluster antigo/destruído de onde vêm os snapshots
+    - CLUSTER DE DESTINO: O cluster novo/atual (obtido do Terraform) que receberá os dados
+
 OPÇÕES:
-    -c, --cluster-id CLUSTER_ID    ID do cluster a ser recuperado (OBRIGATÓRIO - deve ser diferente do cluster atual)
-    -d, --dry-run                  Exibir comandos sem executá-los
+    -c, --cluster-id SOURCE_ID     ID do cluster de origem (snapshots) - OBRIGATÓRIO
+    -d, --dry-run                  Simular operações sem executá-las
     -t, --terraform-dir DIR        Caminho para o diretório do Terraform (padrão: terraform)
     -h, --help                     Exibir esta mensagem de ajuda
 
 EXEMPLOS:
-    $0 -c cluster-1-z1msjfjd                   # Usar ID do cluster específico para recuperação
-    $0 --cluster-id cluster-1-z1msjfjd --dry-run # Modo teste com cluster específico
-    $0 -c cluster-1-z1msjfjd -t /caminho/para/terraform
+    $0 -c cluster-old-xyz123                   # Recuperar do cluster antigo para o novo
+    $0 --cluster-id cluster-old-xyz123 --dry-run # Simular recuperação
+    $0 -c cluster-old-xyz123 -t /caminho/para/terraform
 
-IMPORTANTE:
-    O cluster_id fornecido deve ser DIFERENTE do cluster atual no Terraform.
-    Isso evita confusão entre snapshots do cluster antigo e do novo cluster limpo.
+FLUXO:
+    1. Identifica VMs e discos do cluster NOVO (current Terraform state)
+    2. Para as VMs do cluster novo
+    3. Desanexa os discos novos (vazios)
+    4. Recupera snapshots do cluster ANTIGO
+    5. Cria volumes dos snapshots e anexa às VMs novas
+    6. Reinicia as VMs com os dados recuperados
 
 VARIÁVEIS DE AMBIENTE:
     CLOUDSTACK_API_KEY      Chave de API do CloudStack
@@ -83,6 +93,8 @@ execute_command() {
         return 1
     fi
 }
+
+
 
 check_dependencies() {
     log_info "Verificando dependências..."
@@ -137,21 +149,18 @@ check_dependencies() {
 }
 
 get_terraform_cluster_id() {
-    log_info "Obtendo ID do cluster atual do Terraform..." >&2
+    log_info "Obtendo ID do cluster atual do Terraform..."
     
     # Mudar para o diretório do terraform temporariamente
     local current_dir=$(pwd)
     cd "$TERRAFORM_DIR"
     
     # Obter ID do cluster da saída do terraform
-    local cluster_id
-    if cluster_id=$(terraform output -raw cluster_id 2>/dev/null); then
-        log_success "ID do cluster atual no Terraform: $cluster_id" >&2
+    if TERRAFORM_CLUSTER_ID=$(terraform output -raw cluster_id 2>/dev/null); then
+        log_success "ID do cluster atual no Terraform: $TERRAFORM_CLUSTER_ID"
         cd "$current_dir"
-        # Apenas enviar o valor do ID do cluster para stdout
-        echo "$cluster_id"
     else
-        log_error "Não foi possível obter o ID do cluster da saída do Terraform" >&2
+        log_error "Não foi possível obter o ID do cluster da saída do Terraform"
         echo "" >&2
         echo "Verifique se:" >&2
         echo "- A infraestrutura foi implantada com 'terraform apply'" >&2
@@ -166,28 +175,25 @@ get_terraform_cluster_id() {
 }
 
 validate_cluster_id() {
+    local terraform_cluster_id="$1"
     log_info "Validando cluster_id fornecido..."
-    
-    # Obter o cluster_id atual do terraform
-    local terraform_cluster_id
-    terraform_cluster_id=$(get_terraform_cluster_id)
     
     # Validar que o cluster_id fornecido é diferente do atual
     if [[ "$CLUSTER_ID" == "$terraform_cluster_id" ]]; then
-        log_error "O cluster_id fornecido ($CLUSTER_ID) é o mesmo do cluster atual no Terraform"
+        log_error "O cluster_id de origem ($CLUSTER_ID) é o mesmo do cluster de destino no Terraform"
         echo ""
         echo "Para recuperação de desastre, você deve usar um cluster_id DIFERENTE do atual."
-        echo "Isso evita confusão entre snapshots do cluster antigo sendo recuperado"
-        echo "e snapshots que serão gerados pelo novo cluster limpo."
+        echo "- Cluster de ORIGEM (-c): O cluster antigo/destruído (snapshots)"
+        echo "- Cluster de DESTINO: O cluster novo/atual (Terraform)"
         echo ""
-        echo "Cluster atual no Terraform: $terraform_cluster_id"
-        echo "Cluster fornecido para recuperação: $CLUSTER_ID"
+        echo "Cluster de destino (atual no Terraform): $terraform_cluster_id"
+        echo "Cluster de origem fornecido: $CLUSTER_ID"
         echo ""
-        echo "Efetue a recuperação a partir de um cluster criado do zero, num novo estado do Terraform."
+        echo "Use o ID do cluster antigo como parâmetro -c"
         exit 1
     fi
     
-    log_success "Cluster_id validado: $CLUSTER_ID (diferente do atual: $terraform_cluster_id)"
+    log_success "Cluster_id de origem validado: $CLUSTER_ID (diferente do destino: $terraform_cluster_id)"
 }
 
 check_cloudmonkey() {
@@ -211,37 +217,54 @@ check_cloudmonkey() {
 configure_cloudmonkey() {
     log_info "Configurando CloudMonkey..."
     
-    execute_command "cmk set url '$CLOUDSTACK_API_URL'" "Definindo URL da API do CloudStack"
-    execute_command "cmk set apikey '$CLOUDSTACK_API_KEY'" "Definindo chave de API"
-    execute_command "cmk set secretkey '$CLOUDSTACK_SECRET_KEY'" "Definindo chave secreta"
+    log_info "Definindo URL da API do CloudStack"
+    if cmk set url "$CLOUDSTACK_API_URL"; then
+        log_success "URL da API definida com sucesso"
+    else
+        log_error "Falha ao definir URL da API"
+        exit 1
+    fi
+    
+    log_info "Definindo chave de API"
+    if cmk set apikey "$CLOUDSTACK_API_KEY"; then
+        log_success "Chave de API definida com sucesso"
+    else
+        log_error "Falha ao definir chave de API"
+        exit 1
+    fi
+    
+    log_info "Definindo chave secreta"
+    if cmk set secretkey "$CLOUDSTACK_SECRET_KEY"; then
+        log_success "Chave secreta definida com sucesso"
+    else
+        log_error "Falha ao definir chave secreta"
+        exit 1
+    fi
     
     log_info "Testando conexão com CloudStack..."
-    execute_command "cmk list zones" "Testando conexão com CloudStack"
+    if cmk list zones > /dev/null 2>&1; then
+        log_success "Conexão com CloudStack testada com sucesso"
+    else
+        log_error "Falha ao testar conexão com CloudStack"
+        exit 1
+    fi
     
     log_success "CloudMonkey configurado com sucesso"
 }
 
-get_cluster_vms() {
-    log_info "Obtendo VMs para o cluster: $CLUSTER_ID"
+get_destination_cluster_vms() {
+    local dest_cluster_id="$1"
+    log_info "Obtendo VMs do cluster de destino: $dest_cluster_id"
     
-    local cmd="cmk list virtualmachines | jq -r '.virtualmachine[]? | select(.tags[]? | .key==\"cluster_id\" and .value==\"$CLUSTER_ID\") | .id'"
+    local cmd="cmk list virtualmachines | jq -r '.virtualmachine[]? | select(.tags[]? | .key==\"cluster_id\" and .value==\"$dest_cluster_id\") | .id'"
+    VM_IDS=$(eval "$cmd")
     
-    if [[ "$DRY_RUN" == "true" ]]; then
-        log_warning "[SIMULAÇÃO] Obteria VMs com: $cmd"
-        echo "vm-dummy-1"$'\n'"vm-dummy-2" # Retornar IDs fictícios para simulação
-        return 0
-    fi
-    
-    local vm_ids
-    vm_ids=$(eval "$cmd")
-    
-    if [[ -z "$vm_ids" ]]; then
-        log_error "Nenhuma VM encontrada para o cluster: $CLUSTER_ID"
+    if [[ -z "$VM_IDS" ]]; then
+        log_error "Nenhuma VM encontrada no cluster de destino: $dest_cluster_id"
         exit 1
     fi
     
-    log_success "VMs encontradas: $(echo "$vm_ids" | tr '\n' ' ')"
-    echo "$vm_ids"
+    log_success "VMs do cluster de destino encontradas: $(echo "$VM_IDS" | tr '\n' ' ')"
 }
 
 stop_vms() {
@@ -256,27 +279,31 @@ stop_vms() {
     log_success "Todas as VMs paradas"
 }
 
-get_worker_disks() {
-    log_info "Obtendo discos dos workers para o cluster: $CLUSTER_ID"
+start_vms() {
+    local vm_ids="$1"
+    log_info "Iniciando VMs..."
     
-    local cmd="cmk list volumes | jq -r '.volume[]? | select(.tags[]? | .key==\"cluster_id\" and .value==\"$CLUSTER_ID\") | select(.tags[]? | .key==\"role\" and .value==\"worker\") | .id'"
+    while IFS= read -r vm_id; do
+        [[ -n "$vm_id" ]] || continue
+        execute_command "cmk start virtualmachine id='$vm_id'" "Iniciando VM: $vm_id"
+    done <<< "$vm_ids"
     
-    if [[ "$DRY_RUN" == "true" ]]; then
-        log_warning "[SIMULAÇÃO] Obteria discos dos workers com: $cmd"
-        echo "disk-dummy-1"$'\n'"disk-dummy-2" # Retornar IDs fictícios para simulação
-        return 0
-    fi
+    log_success "Todas as VMs iniciadas"
+}
+
+get_destination_worker_disks() {
+    local dest_cluster_id="$1"
+    log_info "Obtendo discos dos workers do cluster de destino: $dest_cluster_id"
     
-    local disk_ids
-    disk_ids=$(eval "$cmd")
+    local cmd="cmk list volumes | jq -r '.volume[]? | select(.tags[]? | .key==\"cluster_id\" and .value==\"$dest_cluster_id\") | select(.tags[]? | .key==\"role\" and .value==\"worker\") | .id'"
+    DISK_IDS=$(eval "$cmd")
     
-    if [[ -z "$disk_ids" ]]; then
-        log_error "Nenhum disco de worker encontrado para o cluster: $CLUSTER_ID"
+    if [[ -z "$DISK_IDS" ]]; then
+        log_error "Nenhum disco de worker encontrado no cluster de destino: $dest_cluster_id"
         exit 1
     fi
     
-    log_success "Discos de workers encontrados: $(echo "$disk_ids" | tr '\n' ' ')"
-    echo "$disk_ids"
+    log_success "Discos de workers do cluster de destino encontrados: $(echo "$DISK_IDS" | tr '\n' ' ')"
 }
 
 detach_worker_disks() {
@@ -291,33 +318,29 @@ detach_worker_disks() {
     log_success "Todos os discos de workers desanexados"
 }
 
-get_worker_names() {
-    log_info "Obtendo nomes dos workers para o cluster: $CLUSTER_ID"
+get_destination_worker_names() {
+    local dest_cluster_id="$1"
+    log_info "Obtendo nomes dos workers do cluster de destino: $dest_cluster_id"
     
-    local cmd="cmk list virtualmachines | jq -r '.virtualmachine[]? | select(.tags[]? | .key==\"cluster_id\" and .value==\"$CLUSTER_ID\") | select(.tags[]? | .key==\"role\" and .value==\"worker\") | .tags[] | select(.key==\"name\") | .value'"
+    local cmd="cmk list virtualmachines | jq -r '.virtualmachine[]? | select(.tags[]? | .key==\"cluster_id\" and .value==\"$dest_cluster_id\") | select(.tags[]? | .key==\"role\" and .value==\"worker\") | .tags[] | select(.key==\"name\") | .value'"
+    WORKER_NAMES=$(eval "$cmd")
     
-    if [[ "$DRY_RUN" == "true" ]]; then
-        log_warning "[SIMULAÇÃO] Obteria nomes dos workers com: $cmd"
-        echo "wp"$'\n'"mysql" # Retornar nomes fictícios para simulação
-        return 0
-    fi
-    
-    local worker_names
-    worker_names=$(eval "$cmd")
-    
-    if [[ -z "$worker_names" ]]; then
-        log_error "Nenhum nome de worker encontrado para o cluster: $CLUSTER_ID"
+    if [[ -z "$WORKER_NAMES" ]]; then
+        log_error "Nenhum nome de worker encontrado no cluster de destino: $dest_cluster_id"
         exit 1
     fi
     
-    log_success "Workers encontrados: $(echo "$worker_names" | tr '\n' ' ')"
-    echo "$worker_names"
+    log_success "Workers do cluster de destino encontrados: $(echo "$WORKER_NAMES" | tr '\n' ' ')"
 }
 
 recover_worker_snapshots() {
     local worker_names="$1"
+    local source_cluster_id="$2"
+    local dest_cluster_id="$3"
     
     log_info "Recuperando snapshots dos workers..."
+    log_info "Cluster de origem (snapshots): $source_cluster_id"
+    log_info "Cluster de destino (VMs): $dest_cluster_id"
     
     local timestamp
     timestamp=$(date +"%Y%m%d-%H%M%S%z")
@@ -327,36 +350,33 @@ recover_worker_snapshots() {
         
         log_info "Processando worker: $worker_name"
         
-        # Get worker VM ID
+        # Get worker VM ID from DESTINATION cluster
         local worker_vm_id
-        local vm_cmd="cmk list virtualmachines | jq -r '.virtualmachine[]? | select(.tags[]? | .key==\"cluster_id\" and .value==\"$CLUSTER_ID\") | select(.name==\"$worker_name\") | .id'"
+        local vm_cmd="cmk list virtualmachines | jq -r '.virtualmachine[]? | select(.tags[]? | .key==\"cluster_id\" and .value==\"$dest_cluster_id\") | select(.name==\"$worker_name\") | .id'"
+        worker_vm_id=$(eval "$vm_cmd")
         
-        if [[ "$DRY_RUN" == "true" ]]; then
-            worker_vm_id="vm-dummy-$worker_name"
-        else
-            worker_vm_id=$(eval "$vm_cmd")
+        if [[ -z "$worker_vm_id" ]]; then
+            log_error "VM não encontrada para o worker: $worker_name no cluster de destino: $dest_cluster_id"
+            continue
         fi
         
-        # Listar snapshots para este worker
-        local snapshots_cmd="cmk list snapshots | jq '.snapshot[]? | select(.tags[]? | .key==\"cluster_id\" and .value==\"$CLUSTER_ID\") | select(.name | test(\"^${worker_name}_${worker_name}-data\")) | {id: .id, created: .created}' | jq -s 'sort_by(.created)'"
+        # Listar snapshots do SOURCE cluster para este worker
+        local snapshots_cmd="cmk list snapshots | jq '.snapshot[]? | select(.tags[]? | .key==\"cluster_id\" and .value==\"$source_cluster_id\") | select(.name | test(\"^${worker_name}_${worker_name}-data\")) | {id: .id, created: .created}' | jq -s 'sort_by(.created)'"
         
-        log_info "Snapshots para $worker_name:"
-        if [[ "$DRY_RUN" == "true" ]]; then
-            log_warning "[SIMULAÇÃO] Listaria snapshots com: $snapshots_cmd"
-            echo "  [dados fictícios de snapshot]"
+        log_info "Snapshots do cluster de origem ($source_cluster_id) para $worker_name:"
+        local snapshot_list
+        snapshot_list=$(eval "$snapshots_cmd")
+        
+        if [[ -n "$snapshot_list" && "$snapshot_list" != "[]" ]]; then
+            echo "$snapshot_list" | jq -r '.[] | "  ID: \(.id), Criado: \(.created)"'
         else
-            eval "$snapshots_cmd" | jq -r '.[] | "  ID: \(.id), Criado: \(.created)"'
+            log_warning "Nenhum snapshot encontrado para $worker_name no cluster de origem: $source_cluster_id"
         fi
         
-        # Get most recent snapshot ID
-        local latest_snapshot_cmd="cmk list snapshots | jq '.snapshot[]? | select(.tags[]? | .key==\"cluster_id\" and .value==\"$CLUSTER_ID\") | select(.name | test(\"^${worker_name}_${worker_name}-data\"))' | jq -sr 'sort_by(.created) | last | .id'"
-        
+        # Get most recent snapshot ID from SOURCE cluster
+        local latest_snapshot_cmd="cmk list snapshots | jq '.snapshot[]? | select(.tags[]? | .key==\"cluster_id\" and .value==\"$source_cluster_id\") | select(.name | test(\"^${worker_name}_${worker_name}-data\"))' | jq -sr 'sort_by(.created) | last | .id'"
         local latest_snapshot_id
-        if [[ "$DRY_RUN" == "true" ]]; then
-            latest_snapshot_id="snapshot-dummy-$worker_name"
-        else
-            latest_snapshot_id=$(eval "$latest_snapshot_cmd")
-        fi
+        latest_snapshot_id=$(eval "$latest_snapshot_cmd")
         
         if [[ -z "$latest_snapshot_id" || "$latest_snapshot_id" == "null" ]]; then
             log_error "Nenhum snapshot encontrado para o worker: $worker_name"
@@ -378,12 +398,14 @@ recover_worker_snapshots() {
         else
             sleep 5 # Wait for volume creation
             new_volume_id=$(eval "$new_volume_cmd")
+            
+            if [[ -z "$new_volume_id" ]]; then
+                log_error "Não foi possível obter o ID do novo volume para $worker_name"
+                continue
+            fi
         fi
         
         log_info "Novo ID do volume para $worker_name: $new_volume_id"
-        
-        # Iniciar a VM
-        execute_command "cmk start virtualmachine id='$worker_vm_id'" "Iniciando VM do worker: $worker_name"
         
         # Atualizar estado do Terraform
         log_info "Atualizando estado do Terraform para $worker_name..."
@@ -435,17 +457,20 @@ main() {
     
     # Verificar se cluster_id foi fornecido (obrigatório)
     if [[ -z "$CLUSTER_ID" ]]; then
-        log_error "O cluster_id é obrigatório para recuperação de desastre"
+        log_error "O cluster_id de origem é obrigatório para recuperação de desastre"
         echo ""
-        echo "Use a opção -c ou --cluster-id para especificar o cluster a ser recuperado."
-        echo "O cluster_id deve ser DIFERENTE do cluster atual no Terraform."
+        echo "Use a opção -c ou --cluster-id para especificar o cluster de origem (antigo)."
+        echo "Este deve ser o ID do cluster destruído de onde vêm os snapshots."
         echo ""
         show_usage
         exit 1
     fi
     
+    # Get destination cluster ID from Terraform (call only once)
+    get_terraform_cluster_id
+    
     # Validar que o cluster_id é diferente do atual no Terraform
-    validate_cluster_id
+    validate_cluster_id "$TERRAFORM_CLUSTER_ID"
     
     log_info "Iniciando recuperação de desastre para o cluster: $CLUSTER_ID"
     
@@ -457,21 +482,19 @@ main() {
     check_dependencies
     check_cloudmonkey
     configure_cloudmonkey
+    log_info "Cluster de destino (novo): $TERRAFORM_CLUSTER_ID"
+    log_info "Cluster de origem (recuperação): $CLUSTER_ID"
     
-    local vm_ids
-    vm_ids=$(get_cluster_vms)
+    get_destination_cluster_vms "$TERRAFORM_CLUSTER_ID"
+    stop_vms "$VM_IDS"
     
-    stop_vms "$vm_ids"
+    get_destination_worker_disks "$TERRAFORM_CLUSTER_ID"
+    detach_worker_disks "$DISK_IDS"
     
-    local disk_ids
-    disk_ids=$(get_worker_disks)
+    get_destination_worker_names "$TERRAFORM_CLUSTER_ID"
+    recover_worker_snapshots "$WORKER_NAMES" "$CLUSTER_ID" "$TERRAFORM_CLUSTER_ID"
     
-    detach_worker_disks "$disk_ids"
-    
-    local worker_names
-    worker_names=$(get_worker_names)
-    
-    recover_worker_snapshots "$worker_names"
+    start_vms "$VM_IDS"
     
     log_success "Recuperação de desastre concluída com sucesso!"
     

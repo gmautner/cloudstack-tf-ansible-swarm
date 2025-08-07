@@ -3,33 +3,33 @@ all:
     ansible_user: root
     ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
 
-    public_ip: 191.252.224.12
+    public_ip: 191.252.225.44
   children:
     managers:
       hosts:
         manager-1:
-          ansible_host: 191.252.224.12
+          ansible_host: 191.252.225.44
           ansible_port: 22001
-          private_ip: 192.168.1.31
+          private_ip: 192.168.1.183
     workers:
       hosts:
         dockprom:
-          ansible_host: 191.252.224.12
+          ansible_host: 191.252.225.44
           ansible_port: 22004
-          private_ip: 192.168.1.90
+          private_ip: 192.168.1.252
           labels:
             role: "monitoring"
         mysql:
-          ansible_host: 191.252.224.12
+          ansible_host: 191.252.225.44
           ansible_port: 22005
           private_ip: 192.168.1.45
           labels:
             db_category: "mysql"
             type: "database"
         wp:
-          ansible_host: 191.252.224.12
+          ansible_host: 191.252.225.44
           ansible_port: 22006
-          private_ip: 192.168.1.91
+          private_ip: 192.168.1.116
     swarm:
       children:
         managers:
