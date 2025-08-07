@@ -48,28 +48,96 @@ resource "null_resource" "worker_snapshot_policies" {
     cloudstack_disk.worker_data
   ]
 
+  triggers = {
+    volume_id = cloudstack_disk.worker_data[each.key].id
+  }
+
   # Initialize CloudMonkey with credentials
   provisioner "local-exec" {
-    command = "cmk set url $CLOUDSTACK_API_URL && cmk set apikey $CLOUDSTACK_API_KEY && cmk set secretkey $CLOUDSTACK_SECRET_KEY"
+    command = <<-EOT
+      cmk set url $CLOUDSTACK_API_URL && \
+      cmk set apikey $CLOUDSTACK_API_KEY && \
+      cmk set secretkey $CLOUDSTACK_SECRET_KEY
+    EOT
   }
 
   # Hourly snapshots
   provisioner "local-exec" {
-    command = "cmk create snapshotpolicy intervaltype=HOURLY schedule=${local.schedule_hourly} timezone=Etc/UTC volumeid=${cloudstack_disk.worker_data[each.key].id} maxsnaps=3 zoneids=${local.zone_ids} tags[0].key=cluster_id tags[0].value=${local.cluster_id}"
+    command = <<-EOT
+      if cmk list snapshotpolicies volumeid=${cloudstack_disk.worker_data[each.key].id} \
+        | jq -e '.snapshotpolicy // [] | map(select(.intervaltype==0)) | length > 0' >/dev/null; then
+        echo 'Hourly snapshot policy exists, skipping.'
+      else
+        cmk create snapshotpolicy \
+          intervaltype=HOURLY \
+          schedule=${local.schedule_hourly} \
+          timezone=Etc/UTC \
+          volumeid=${cloudstack_disk.worker_data[each.key].id} \
+          maxsnaps=3 \
+          zoneids=${local.zone_ids} \
+          tags[0].key=cluster_id \
+          tags[0].value=${local.cluster_id}
+      fi
+    EOT
   }
 
   # Daily snapshots
   provisioner "local-exec" {
-    command = "cmk create snapshotpolicy intervaltype=DAILY schedule=${local.schedule_daily} timezone=Etc/UTC volumeid=${cloudstack_disk.worker_data[each.key].id} maxsnaps=2 zoneids=${local.zone_ids} tags[0].key=cluster_id tags[0].value=${local.cluster_id}"
+    command = <<-EOT
+      if cmk list snapshotpolicies volumeid=${cloudstack_disk.worker_data[each.key].id} \
+        | jq -e '.snapshotpolicy // [] | map(select(.intervaltype==1)) | length > 0' >/dev/null; then
+        echo 'Daily snapshot policy exists, skipping.'
+      else
+        cmk create snapshotpolicy \
+          intervaltype=DAILY \
+          schedule=${local.schedule_daily} \
+          timezone=Etc/UTC \
+          volumeid=${cloudstack_disk.worker_data[each.key].id} \
+          maxsnaps=2 \
+          zoneids=${local.zone_ids} \
+          tags[0].key=cluster_id \
+          tags[0].value=${local.cluster_id}
+      fi
+    EOT
   }
 
   # Weekly snapshots
   provisioner "local-exec" {
-    command = "cmk create snapshotpolicy intervaltype=WEEKLY schedule=${local.schedule_weekly} timezone=Etc/UTC volumeid=${cloudstack_disk.worker_data[each.key].id} maxsnaps=2 zoneids=${local.zone_ids} tags[0].key=cluster_id tags[0].value=${local.cluster_id}"
+    command = <<-EOT
+      if cmk list snapshotpolicies volumeid=${cloudstack_disk.worker_data[each.key].id} \
+        | jq -e '.snapshotpolicy // [] | map(select(.intervaltype==2)) | length > 0' >/dev/null; then
+        echo 'Weekly snapshot policy exists, skipping.'
+      else
+        cmk create snapshotpolicy \
+          intervaltype=WEEKLY \
+          schedule=${local.schedule_weekly} \
+          timezone=Etc/UTC \
+          volumeid=${cloudstack_disk.worker_data[each.key].id} \
+          maxsnaps=2 \
+          zoneids=${local.zone_ids} \
+          tags[0].key=cluster_id \
+          tags[0].value=${local.cluster_id}
+      fi
+    EOT
   }
 
   # Monthly snapshots
   provisioner "local-exec" {
-    command = "cmk create snapshotpolicy intervaltype=MONTHLY schedule=${local.schedule_monthly} timezone=Etc/UTC volumeid=${cloudstack_disk.worker_data[each.key].id} maxsnaps=2 zoneids=${local.zone_ids} tags[0].key=cluster_id tags[0].value=${local.cluster_id}"
+    command = <<-EOT
+      if cmk list snapshotpolicies volumeid=${cloudstack_disk.worker_data[each.key].id} \
+        | jq -e '.snapshotpolicy // [] | map(select(.intervaltype==3)) | length > 0' >/dev/null; then
+        echo 'Monthly snapshot policy exists, skipping.'
+      else
+        cmk create snapshotpolicy \
+          intervaltype=MONTHLY \
+          schedule=${local.schedule_monthly} \
+          timezone=Etc/UTC \
+          volumeid=${cloudstack_disk.worker_data[each.key].id} \
+          maxsnaps=2 \
+          zoneids=${local.zone_ids} \
+          tags[0].key=cluster_id \
+          tags[0].value=${local.cluster_id}
+      fi
+    EOT
   }
 }
