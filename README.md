@@ -121,6 +121,29 @@ Após a implantação, os seguintes serviços estarão disponíveis:
 - **WordPress**: `https://portal.cluster-1.giba.tech` (ou o domínio configurado nos arquivos Docker Compose)
 - **Dashboard Traefik**: `https://traefik.cluster-1.giba.tech` (ou o domínio configurado nos arquivos Docker Compose)
 
+### Autenticação Básica (Traefik)
+
+Para proteger serviços com autenticação básica via Traefik, use um segredo do Docker Swarm contendo o conteúdo de um `.htpasswd` (bcrypt). O segredo é criado automaticamente pelo playbook a partir de uma variável de ambiente.
+
+Passos:
+
+1) Gere a linha de `.htpasswd` (usuário e hash bcrypt) usando `htpasswd` e exporte como variável de ambiente. Se necessário, instale a ferramenta: Ubuntu/Debian/WSL → `sudo apt-get install -y apache2-utils`; RHEL/CentOS/Rocky → `sudo yum install -y httpd-tools`; macOS (Homebrew) → `brew install httpd`.
+```bash
+export TRAEFIK_BASICAUTH=$(htpasswd -nbBC 10 admin 'SUA_SENHA_FORTE')
+```
+
+2) Execute o playbook normalmente. A task "Create Docker secrets from environment variables" criará/atualizará o segredo `traefik_basicauth` automaticamente a partir de `TRAEFIK_BASICAUTH`:
+
+```bash
+cd ansible
+ansible-playbook -i inventory.yml playbook.yml
+```
+
+3) O Traefik consumirá o segredo `traefik_basicauth` e lerá o arquivo em `/run/secrets/traefik_basicauth` no middleware `basic-auth`.
+
+Observações:
+- Para aplicar a proteção em um serviço, adicione o middleware `basic-auth@docker` nas labels do roteador do serviço (já aplicado para Prometheus e Alertmanager neste projeto).
+
 ## Notas Importantes de Segurança
 
 ### Estado do Terraform

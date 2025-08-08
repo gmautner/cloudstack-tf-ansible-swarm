@@ -7,6 +7,8 @@ networks:
   monitor-net:
     name: monitor-net
     driver: overlay
+  traefik_network:
+    external: true
 
 volumes:
     prometheus_data: {}
@@ -28,6 +30,7 @@ services:
       - '--web.enable-lifecycle'
     networks:
       - monitor-net
+      - traefik_network
     labels:
       org.label-schema.group: "monitoring"
     deploy:
@@ -35,6 +38,13 @@ services:
       placement:
         constraints:
           - node.labels.role == monitoring
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.prometheus.rule=Host(`prometheus.${DOMAIN_SUFFIX}`)
+        - traefik.http.routers.prometheus.entrypoints=websecure
+        - traefik.http.routers.prometheus.tls.certresolver=letsencrypt
+        - traefik.http.services.prometheus.loadbalancer.server.port=9090
+        - traefik.http.routers.prometheus.middlewares=basic-auth@swarm
 
   alertmanager:
     image: prom/alertmanager:v0.28.1
@@ -45,6 +55,7 @@ services:
       - '--storage.path=/alertmanager'
     networks:
       - monitor-net
+      - traefik_network
     labels:
       org.label-schema.group: "monitoring"
     deploy:
@@ -52,6 +63,13 @@ services:
       placement:
         constraints:
           - node.labels.role == monitoring
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.alertmanager.rule=Host(`alertmanager.${DOMAIN_SUFFIX}`)
+        - traefik.http.routers.alertmanager.entrypoints=websecure
+        - traefik.http.routers.alertmanager.tls.certresolver=letsencrypt
+        - traefik.http.services.alertmanager.loadbalancer.server.port=9093
+        - traefik.http.routers.alertmanager.middlewares=basic-auth@swarm
 
   nodeexporter:
     image: prom/node-exporter:v1.9.1
@@ -108,6 +126,7 @@ services:
       - GF_USERS_ALLOW_SIGN_UP=false
     networks:
       - monitor-net
+      - traefik_network
     labels:
       org.label-schema.group: "monitoring"
     deploy:
@@ -115,33 +134,15 @@ services:
       placement:
         constraints:
           - node.labels.role == monitoring
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.grafana.rule=Host(`grafana.${DOMAIN_SUFFIX}`)
+        - traefik.http.routers.grafana.entrypoints=websecure
+        - traefik.http.routers.grafana.tls.certresolver=letsencrypt
+        - traefik.http.services.grafana.loadbalancer.server.port=3000
 
   pushgateway:
     image: prom/pushgateway:v1.11.0
-    networks:
-      - monitor-net
-    labels:
-      org.label-schema.group: "monitoring"
-    deploy:
-      replicas: 1
-      placement:
-        constraints:
-          - node.labels.role == monitoring
-
-  caddy:
-    image: caddy:2.10.0
-    ports:
-      - "3000:3000"
-      - "8080:8080"
-      - "9090:9090"
-      - "9093:9093"
-      - "9091:9091"
-    volumes:
-      - ./caddy:/etc/caddy
-    environment:
-      - ADMIN_USER=${ADMIN_USER:-admin}
-      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
-      - ADMIN_PASSWORD_HASH=${ADMIN_PASSWORD_HASH:-$2a$14$1l.IozJx7xQRVmlkEQ32OeEEfP5mRxTpbDTCTcXRqn19gXD8YK1pO}
     networks:
       - monitor-net
     labels:

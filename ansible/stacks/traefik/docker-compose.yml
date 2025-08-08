@@ -31,6 +31,8 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - letsencrypt_data:/letsencrypt
+    secrets:
+      - traefik_basicauth
     networks:
       - traefik_network
       - monitor-net
@@ -46,6 +48,7 @@ services:
         - traefik.http.routers.traefik.tls.certresolver=letsencrypt
         - traefik.http.routers.traefik.service=api@internal
         - traefik.http.services.traefik.loadbalancer.server.port=8080
+        - traefik.http.middlewares.basic-auth.basicauth.usersFile=/run/secrets/traefik_basicauth
 
 volumes:
   letsencrypt_data:
@@ -56,4 +59,8 @@ networks:
     name: traefik_network
     driver: overlay
   monitor-net:
+    external: true
+
+secrets:
+  traefik_basicauth:
     external: true
