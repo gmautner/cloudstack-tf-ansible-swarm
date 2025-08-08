@@ -30,6 +30,24 @@ export MYSQL_ROOT_PASSWORD="senha-root-segura"
 export WORDPRESS_DB_PASSWORD="senha-wordpress-segura"
 ```
 
+#### (Opcional) Login em Container Registry
+
+Para fazer login em um container registry (para imagens privadas), você pode definir estas variáveis antes de executar o playbook. Se a senha estiver vazia, o playbook fará logout e removerá as credenciais salvas do host.
+
+```bash
+# Padrões se não definidos:
+# - DOCKER_REGISTRY_URL → Docker Hub (https://index.docker.io/v1/)
+# - DOCKER_REGISTRY_USERNAME → "nobody"
+
+export DOCKER_REGISTRY_URL="https://ghcr.io"          # opcional
+export DOCKER_REGISTRY_USERNAME="meu-usuario"         # opcional
+export DOCKER_REGISTRY_PASSWORD="minha-senha-ou-token" # necessário para login
+```
+
+- Se `DOCKER_REGISTRY_PASSWORD` estiver definido (não vazio), o playbook fará login no registry informado (ou Docker Hub por padrão).
+- Se `DOCKER_REGISTRY_PASSWORD` estiver vazio, o playbook fará logout do registry informado (ou do Docker Hub por padrão) e removerá as credenciais do host.
+- O deploy das stacks usa sempre `with_registry_auth: true`; se não houver login prévio, nada é encaminhado (imagens públicas funcionam; imagens privadas exigem credenciais válidas).
+
 ### 2. Configurar Variáveis do Terraform
 
 Copie o arquivo de exemplo e edite as variáveis em `terraform/terraform.tfvars`:

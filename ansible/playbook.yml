@@ -257,6 +257,23 @@
         file: "{{ playbook_dir }}/secrets/secrets.yaml"
         name: secrets_config
 
+    - name: Logout from registry if password env var is empty
+      community.docker.docker_login:
+        registry_url: "{{ lookup('env', 'DOCKER_REGISTRY_URL') | default('https://index.docker.io/v1/', true) }}"
+        state: absent
+      when:
+        - (lookup('env', 'DOCKER_REGISTRY_PASSWORD') | default('', true)) == ''
+
+    - name: Login to container registry from environment variables (optional)
+      community.docker.docker_login:
+        registry_url: "{{ lookup('env', 'DOCKER_REGISTRY_URL') | default('https://index.docker.io/v1/', true) }}"
+        username: "{{ lookup('env', 'DOCKER_REGISTRY_USERNAME') | default('nobody', true) }}"
+        password: "{{ lookup('env', 'DOCKER_REGISTRY_PASSWORD') | default('', true) }}"
+        reauthorize: true
+        state: present
+      when:
+        - (lookup('env', 'DOCKER_REGISTRY_PASSWORD') | default('', true)) != ''
+
     - name: Create Docker secrets from environment variables
       community.docker.docker_secret:
         name: "{{ item.name }}"
@@ -288,6 +305,7 @@
       community.docker.docker_stack:
         name: "{{ item.path | dirname | basename }}"
         prune: true
+        with_registry_auth: true
         compose:
           - "{{ item.path }}"
         state: present
