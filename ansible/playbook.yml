@@ -309,5 +309,7 @@
         compose:
           - "{{ item.path }}"
         state: present
+      environment:
+        DOMAIN_SUFFIX: "{{ domain_suffix }}"
       with_items: "{{ compose_files.files }}"
       when: compose_files.files | length > 0

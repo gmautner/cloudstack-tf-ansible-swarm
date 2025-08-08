@@ -4,6 +4,7 @@ all:
     ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
 
     public_ip: 191.252.225.44
+    domain_suffix: cluster-1.giba.tech
   children:
     managers:
       hosts:

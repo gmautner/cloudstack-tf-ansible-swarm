@@ -32,6 +32,12 @@ variable "cluster_name" {
   type        = string
 }
 
+variable "domain_suffix" {
+  description = "Domain suffix for the cluster"
+  type        = string
+  default     = ""
+}
+
 variable "workers" {
   description = "Map of worker nodes to create"
   type = map(object({
