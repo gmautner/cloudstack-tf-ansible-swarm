@@ -21,9 +21,6 @@ services:
       placement:
         constraints:
           - node.hostname == mysql
-      # resources:
-      #   limits:
-      #     memory: '{{ hostvars["mysql"]["available_memory_mb"] }}m'
 
   wordpress:
     image: wordpress:php8.3-apache
