@@ -34,6 +34,10 @@
         value: 'false'
         vtype: boolean
 
+    - name: Set timezone to UTC
+      community.general.timezone:
+        name: UTC
+
     - name: Update and upgrade packages
       apt:
         update_cache: true
@@ -58,6 +62,14 @@
           APT::Periodic::Update-Package-Lists "1";
           APT::Periodic::Unattended-Upgrade "1";
         dest: /etc/apt/apt.conf.d/20auto-upgrades
+
+    - name: Configure automatic reboots for unattended-upgrades
+      copy:
+        dest: /etc/apt/apt.conf.d/52-automatic-reboots
+        content: |
+          Unattended-Upgrade::Automatic-Reboot "true";
+          Unattended-Upgrade::Automatic-Reboot-Time "{{ automatic_reboot_time_utc }}";
+      when: automatic_reboot | bool
 
     - name: Add Docker GPG key
       apt_key:

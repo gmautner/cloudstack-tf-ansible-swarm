@@ -10,6 +10,12 @@ domain_suffix = "cluster-1.giba.tech"
 # Opcional: Restringir acesso SSH (default: ["0.0.0.0/0"])
 # allowed_ssh_cidr_blocks = ["203.0.113.0/24", "198.51.100.0/24"]
 
+# Opcional: Habilitar reinicializações automáticas após atualizações (default: false)
+# automatic_reboot = true
+
+# Opcional: Horário UTC para reinicializações automáticas (default: "05:00")
+# automatic_reboot_time_utc = "05:00"
+
 # Opcional: Número de managers (default: 3, permitido: 1 ou 3)
 manager_count = 1
 

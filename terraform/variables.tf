@@ -58,6 +58,18 @@ variable "manager_count" {
   }
 }
 
+variable "automatic_reboot" {
+  description = "Enable automatic reboots for unattended upgrades"
+  type        = bool
+  default     = false
+}
+
+variable "automatic_reboot_time_utc" {
+  description = "Time in UTC for automatic reboots (e.g., '05:00')"
+  type        = string
+  default     = "05:00"
+}
+
 variable "public_ips" {
   description = "Map of public IPs and their port configurations"
   type = map(object({

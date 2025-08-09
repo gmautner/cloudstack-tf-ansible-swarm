@@ -52,8 +52,10 @@ output "snapshot_schedules" {
 # Generate Ansible inventory file
 resource "local_file" "ansible_inventory" {
   content = templatefile("${path.module}/inventory.tpl", {
-    public_ip     = cloudstack_ipaddress.main.ip_address
-    domain_suffix = var.domain_suffix
+    public_ip                   = cloudstack_ipaddress.main.ip_address
+    domain_suffix               = var.domain_suffix
+    automatic_reboot            = var.automatic_reboot
+    automatic_reboot_time_utc   = var.automatic_reboot_time_utc
     managers = [
       for i in range(var.manager_count) : {
         name       = cloudstack_instance.managers[i].name

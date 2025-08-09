@@ -5,6 +5,8 @@ all:
 
     public_ip: ${public_ip}
     domain_suffix: ${domain_suffix}
+    automatic_reboot: ${automatic_reboot}
+    automatic_reboot_time_utc: "${automatic_reboot_time_utc}"
   children:
     managers:
       hosts:
