@@ -27,9 +27,27 @@ all:
           labels:
             db_category: "mysql"
             type: "database"
-        wp:
+        shared-1:
           ansible_host: 191.252.225.44
           ansible_port: 22006
+          private_ip: 192.168.1.6
+          labels:
+            pool: "shared"
+        shared-2:
+          ansible_host: 191.252.225.44
+          ansible_port: 22007
+          private_ip: 192.168.1.161
+          labels:
+            pool: "shared"
+        shared-3:
+          ansible_host: 191.252.225.44
+          ansible_port: 22008
+          private_ip: 192.168.1.134
+          labels:
+            pool: "shared"
+        wp:
+          ansible_host: 191.252.225.44
+          ansible_port: 22009
           private_ip: 192.168.1.116
     swarm:
       children:

@@ -47,20 +47,6 @@ services:
         - traefik.http.routers.wordpress.tls.certresolver=letsencrypt
         - traefik.http.services.wordpress.loadbalancer.server.port=80
 
-  echoserver:
-    image: cilium/echoserver:latest
-    networks:
-      - traefik_network
-      - wp_network
-    deploy:
-      replicas: 1
-      labels:
-        - traefik.enable=true
-        - traefik.http.routers.echoserver.rule=Host(`echo.cluster-1.giba.tech`)
-        - traefik.http.routers.echoserver.entrypoints=websecure
-        - traefik.http.routers.echoserver.tls.certresolver=letsencrypt
-        - traefik.http.services.echoserver.loadbalancer.server.port=80
-
   hello:
     image: registry.gitlab.platform.lwsa.tech/labs/python-web-app:latest
     networks:

@@ -34,6 +34,27 @@ workers = {
       "system" = "monitoring"
     }
   },
+  "shared-1" = {
+    plan         = "micro",
+    data_size_gb = 10,
+    labels = {
+      "pool" = "shared"
+    }
+  },
+  "shared-2" = {
+    plan         = "micro",
+    data_size_gb = 10,
+    labels = {
+      "pool" = "shared"
+    }
+  },
+  "shared-3" = {
+    plan         = "micro",
+    data_size_gb = 10,
+    labels = {
+      "pool" = "shared"
+    }
+  },
 }
 
 # Public IPs and load balancer configuration
