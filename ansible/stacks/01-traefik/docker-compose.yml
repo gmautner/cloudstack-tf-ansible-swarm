@@ -49,6 +49,7 @@ services:
         - traefik.http.routers.traefik.service=api@internal
         - traefik.http.services.traefik.loadbalancer.server.port=8080
         - traefik.http.middlewares.basic-auth.basicauth.usersFile=/run/secrets/traefik_basicauth
+        - traefik.http.routers.traefik.middlewares=basic-auth@swarm
 
 volumes:
   letsencrypt_data:
