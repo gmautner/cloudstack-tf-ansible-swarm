@@ -19,7 +19,7 @@ all:
           ansible_port: 22004
           private_ip: 192.168.1.252
           labels:
-            role: "monitoring"
+            system: "monitoring"
         mysql:
           ansible_host: 191.252.225.44
           ansible_port: 22005
