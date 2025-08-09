@@ -37,7 +37,7 @@ services:
       replicas: 1
       placement:
         constraints:
-          - node.labels.role == monitoring
+          - node.labels.system == monitoring
       labels:
         - traefik.enable=true
         - traefik.http.routers.prometheus.rule=Host(`prometheus.${DOMAIN_SUFFIX}`)
@@ -62,7 +62,7 @@ services:
       replicas: 1
       placement:
         constraints:
-          - node.labels.role == monitoring
+          - node.labels.system == monitoring
       labels:
         - traefik.enable=true
         - traefik.http.routers.alertmanager.rule=Host(`alertmanager.${DOMAIN_SUFFIX}`)
@@ -133,7 +133,7 @@ services:
       replicas: 1
       placement:
         constraints:
-          - node.labels.role == monitoring
+          - node.labels.system == monitoring
       labels:
         - traefik.enable=true
         - traefik.http.routers.grafana.rule=Host(`grafana.${DOMAIN_SUFFIX}`)
@@ -151,4 +151,4 @@ services:
       replicas: 1
       placement:
         constraints:
-          - node.labels.role == monitoring
+          - node.labels.system == monitoring

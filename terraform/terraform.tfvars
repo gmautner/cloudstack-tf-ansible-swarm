@@ -31,7 +31,7 @@ workers = {
     plan         = "large",
     data_size_gb = 100,
     labels = {
-      "role" = "monitoring"
+      "system" = "monitoring"
     }
   },
 }
