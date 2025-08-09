@@ -5,6 +5,8 @@ all:
 
     public_ip: 191.252.225.44
     domain_suffix: cluster-1.giba.tech
+    automatic_reboot: false
+    automatic_reboot_time_utc: "05:00"
   children:
     managers:
       hosts:
