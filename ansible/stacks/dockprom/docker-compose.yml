@@ -1,6 +1,0 @@
-# Adaptado de https://github.com/stefanprodan/dockprom
-# Acompanhe commits deste repositório para atualizar imagens
-# Dashboards adicionais copiados de https://github.com/portainer/templates/tree/master/images/monitoring/grafana/config/dashboards
-version: '3.8'
-
-services: {}
