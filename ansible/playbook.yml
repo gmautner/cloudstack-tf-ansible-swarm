@@ -301,9 +301,12 @@
         recurse: true
       register: compose_files
 
+    # As stacks são implantadas em ordem alfabética, conforme o nome do diretório.
+    # Para controlar a ordem, prefixe os diretórios com "NN-".
+    # O prefixo é removido do nome da stack para evitar que ela seja recriada caso ele mude.
     - name: Deploy each stack from NFS mount
       community.docker.docker_stack:
-        name: "{{ item.path | dirname | basename }}"
+        name: "{{ (item.path | dirname | basename) | regex_replace('^[0-9]+-', '') }}"
         prune: true
         with_registry_auth: true
         compose:
@@ -311,5 +314,5 @@
         state: present
       environment:
         DOMAIN_SUFFIX: "{{ domain_suffix }}"
-      with_items: "{{ compose_files.files }}"
+      with_items: "{{ compose_files.files | sort(attribute='path') }}"
       when: compose_files.files | length > 0
