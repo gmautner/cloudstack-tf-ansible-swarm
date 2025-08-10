@@ -1,4 +1,4 @@
-# Adaptado de https://github.com/stefanprodan/dockprom
+# Adaptado de https://github.com/stefanprodan/dockprom e https://github.com/grafana/loki-fundamentals/blob/fluentbit-official/docker-compose.yml
 # Acompanhe commits deste repositório para atualizar imagens
 # Dashboards adicionais copiados de https://github.com/portainer/templates/tree/master/images/monitoring/grafana/config/dashboards
 version: '3.8'
@@ -12,6 +12,7 @@ networks:
 volumes:
     prometheus_data: {}
     grafana_data: {}
+    flb-state: {}
 
 services:
 
@@ -30,8 +31,6 @@ services:
     networks:
       - monitor-net
       - traefik_network
-    labels:
-      org.label-schema.group: "monitoring"
     deploy:
       replicas: 1
       placement:
@@ -55,8 +54,6 @@ services:
     networks:
       - monitor-net
       - traefik_network
-    labels:
-      org.label-schema.group: "monitoring"
     deploy:
       replicas: 1
       placement:
@@ -83,8 +80,6 @@ services:
       - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
     networks:
       - monitor-net
-    labels:
-      org.label-schema.group: "monitoring"
     deploy:
       mode: global
       resources:
@@ -103,8 +98,6 @@ services:
       #- /cgroup:/cgroup:ro #doesn't work on MacOS only for Linux
     networks:
       - monitor-net
-    labels:
-      org.label-schema.group: "monitoring"
     deploy:
       mode: global
       resources:
@@ -126,8 +119,6 @@ services:
     networks:
       - monitor-net
       - traefik_network
-    labels:
-      org.label-schema.group: "monitoring"
     deploy:
       replicas: 1
       placement:
@@ -144,10 +135,33 @@ services:
     image: prom/pushgateway:v1.11.0
     networks:
       - monitor-net
-    labels:
-      org.label-schema.group: "monitoring"
     deploy:
       replicas: 1
       placement:
         constraints:
           - node.labels.system == monitoring
+
+  fluentbit:
+    image: cr.fluentbit.io/fluent/fluent-bit:4
+    command: ["-c", "/fluent-bit/etc/fluent-bit.conf"]
+    networks:
+      - monitor-net
+    deploy:
+      mode: global
+    volumes:
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - flb-state:/fluent-bit/state
+      - ./fluent-bit/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf
+    environment:
+      - LOKI_URL=http://loki:3100/loki/api/v1/push
+
+  loki:
+    image: grafana/loki:3.5
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./loki/loki-config.yaml:/etc/loki/local-config.yaml
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - monitor-net
