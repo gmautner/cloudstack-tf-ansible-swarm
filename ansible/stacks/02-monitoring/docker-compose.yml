@@ -15,6 +15,12 @@ volumes:
     flb-state: {}
     loki_data: {}
 
+configs:
+  fluent_bit_v1_conf:
+    file: ./fluent-bit-config/fluent-bit-v1.conf
+  fluent_bit_v1_parsers:
+    file: ./fluent-bit-config/parsers-v1.conf
+
 services:
 
   prometheus:
@@ -153,8 +159,11 @@ services:
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - flb-state:/fluent-bit/state
-      - ./fluent-bit-config/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf
-      - ./fluent-bit-config/parsers.conf:/fluent-bit/etc/parsers.conf
+    configs:
+      - source: fluent_bit_v1_conf
+        target: /fluent-bit/etc/fluent-bit.conf
+      - source: fluent_bit_v1_parsers
+        target: /fluent-bit/etc/parsers.conf
 
   loki:
     image: grafana/loki:3.5
