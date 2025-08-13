@@ -15,7 +15,8 @@ volumes:
     loki_data: {}
 
 configs:
-  promtail_config:
+  # Configs são imutáveis - ao alterar a configuração, crie uma nova versão (ex: promtail_config_v2)
+  promtail_config_v1:
     file: ./promtail/promtail-config.yml
 
 services:
@@ -157,7 +158,8 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /var/log:/var/log
     configs:
-      - source: promtail_config
+      # Versão da config - ao alterar, use uma nova versão e atualize a referência acima
+      - source: promtail_config_v1
         target: /etc/promtail/config.yml
 
   loki:
