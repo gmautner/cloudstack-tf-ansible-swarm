@@ -103,6 +103,20 @@
         mode: '0644'
       notify: restart docker
 
+    - name: Configure Docker daemon log rotation
+      copy:
+        dest: /etc/docker/daemon.json
+        content: |
+          {
+            "log-driver": "json-file",
+            "log-opts": {
+              "max-size": "10m",
+              "max-file": "3"
+            }
+          }
+        mode: '0644'
+      notify: restart docker
+
     - name: Start and enable Docker service
       systemd:
         name: docker
