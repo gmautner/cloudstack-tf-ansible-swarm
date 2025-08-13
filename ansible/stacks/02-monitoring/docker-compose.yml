@@ -12,14 +12,11 @@ networks:
 volumes:
     prometheus_data: {}
     grafana_data: {}
-    flb-state: {}
     loki_data: {}
 
 configs:
-  fluent_bit_v1_conf:
-    file: ./fluent-bit-config/fluent-bit-v1.conf
-  fluent_bit_v1_parsers:
-    file: ./fluent-bit-config/parsers-v1.conf
+  promtail_config:
+    file: ./promtail/promtail-config.yml
 
 services:
 
@@ -148,9 +145,9 @@ services:
         constraints:
           - node.labels.system == monitoring
 
-  fluentbit:
-    image: fluent/fluent-bit:4.0
-    command: ["-c", "/fluent-bit/etc/fluent-bit.conf"]
+  promtail:
+    image: grafana/promtail:3.5
+    command: -config.file=/etc/promtail/config.yml
     networks:
       - monitor-net
     deploy:
@@ -158,12 +155,10 @@ services:
     volumes:
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - flb-state:/fluent-bit/state
+      - /var/log:/var/log
     configs:
-      - source: fluent_bit_v1_conf
-        target: /fluent-bit/etc/fluent-bit.conf
-      - source: fluent_bit_v1_parsers
-        target: /fluent-bit/etc/parsers.conf
+      - source: promtail_config
+        target: /etc/promtail/config.yml
 
   loki:
     image: grafana/loki:3.5
