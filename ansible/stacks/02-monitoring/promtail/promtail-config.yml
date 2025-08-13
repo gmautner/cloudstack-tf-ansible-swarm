@@ -21,9 +21,9 @@ scrape_configs:
         target_label: 'container_id'
       - source_labels: ['__meta_docker_container_log_stream']
         target_label: 'stream'
-      - source_labels: ['__meta_docker_network_name']
-        target_label: 'network_name'
       - source_labels: ["__meta_docker_container_label_com_docker_swarm_service_name"]
         target_label: 'service_name'
       - source_labels: ["__meta_docker_container_label_com_docker_stack_namespace"]
         target_label: 'stack'
+      - source_labels: ['__meta_docker_container_label_com_docker_swarm_node_id']
+        target_label: 'node_id'

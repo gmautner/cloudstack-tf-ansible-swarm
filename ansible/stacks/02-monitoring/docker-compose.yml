@@ -15,8 +15,8 @@ volumes:
     loki_data: {}
 
 configs:
-  # Configs são imutáveis - ao alterar a configuração, crie uma nova versão (ex: promtail_config_v2)
-  promtail_config_v1:
+  # Configs são imutáveis - ao alterar a configuração, crie uma nova versão (ex: promtail_config_v3)
+  promtail_config_v3:
     file: ./promtail/promtail-config.yml
 
 services:
@@ -159,7 +159,7 @@ services:
       - /var/log:/var/log
     configs:
       # Versão da config - ao alterar, use uma nova versão e atualize a referência acima
-      - source: promtail_config_v1
+      - source: promtail_config_v3
         target: /etc/promtail/config.yml
 
   loki:
