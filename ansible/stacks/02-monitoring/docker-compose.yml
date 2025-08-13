@@ -59,6 +59,8 @@ services:
     networks:
       - monitor-net
       - traefik_network
+    secrets:
+      - slack_api_url
     deploy:
       replicas: 1
       placement:
@@ -177,3 +179,7 @@ services:
       placement:
         constraints:
           - node.labels.system == monitoring
+
+secrets:
+  slack_api_url:
+    external: true
