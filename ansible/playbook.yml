@@ -300,15 +300,15 @@
       when:
         - (lookup('env', 'DOCKER_REGISTRY_PASSWORD') | default('', true)) != ''
 
-    - name: Create Docker secrets from environment variables
+    - name: Create Docker secrets
       community.docker.docker_secret:
         name: "{{ item.name }}"
-        data: "{{ lookup('env', item.env_var) }}"
+        data: "{{ secrets_context[item.env_var] | default(lookup('env', item.env_var)) }}"
         state: present
       loop: "{{ secrets_config.docker_secrets }}"
-      when: 
+      when:
         - secrets_config.docker_secrets is defined
-        - lookup('env', item.env_var) != ""
+        - secrets_context[item.env_var] is defined or lookup('env', item.env_var) != ""
 
     - name: Copy entire stacks directory to NFS mount
       synchronize:

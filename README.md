@@ -105,17 +105,11 @@ The playbook will automatically find and deploy it. You can also add your new st
 
 ### Managing Secrets
 
-Application secrets (like database passwords or API keys) are managed via Ansible. This template uses environment variables to create Docker Swarm secrets, which are then securely mounted into your service containers.
+Application secrets (like database passwords or API keys) are managed via Ansible. This template uses environment variables to create Docker Swarm secrets, which are then securely mounted into your service containers. The file `ansible/secrets/secrets.yaml` defines which secrets to create from which environment variables.
 
 To configure your secrets:
 
-1.  **Copy the Example File**: Copy `ansible/secrets/secrets.yaml.example` to `ansible/secrets/secrets.yaml`.
-
-    ```bash
-    cp ansible/secrets/secrets.yaml.example ansible/secrets/secrets.yaml
-    ```
-
-2.  **Define Your Secrets**: Edit `ansible/secrets/secrets.yaml` to define the secrets your applications need. Each secret is mapped to an environment variable that you will need to set.
+1.  **Define Your Secrets**: Edit `ansible/secrets/secrets.yaml` to define the secrets your applications need. You can add or remove entries from this file to match your requirements. It is safe to commit this file to version control, as it only contains the names of the secrets and the environment variables they map to, not the secret values themselves.
 
     ```yaml
     # ansible/secrets/secrets.yaml
@@ -126,14 +120,14 @@ To configure your secrets:
         env_var: WORDPRESS_DB_PASSWORD
     ```
 
-3.  **Set Environment Variables**: Before running `make deploy`, export the environment variables corresponding to your secrets.
+2.  **Set Environment Variables Locally**: Before running `make deploy` locally, export the environment variables corresponding to your secrets.
 
     ```bash
     export MYSQL_ROOT_PASSWORD="your-secure-root-password"
     export WORDPRESS_DB_PASSWORD="your-secure-db-password"
     ```
 
-The `ansible/secrets/secrets.yaml` file is included in `.gitignore` to prevent you from accidentally committing your secrets to version control.
+An example file, `ansible/secrets/secrets.yaml.example`, is provided for reference.
 
 ## CI/CD with GitHub Actions
 
@@ -142,12 +136,17 @@ This template includes two example workflows in `.github/workflows/`:
 - `deploy.yml`: Triggered on push to `main`. Deploys the infrastructure and stacks.
 - `destroy.yml`: Triggered manually. Destroys the infrastructure.
 
-To use them, you need to add the following secrets to your GitHub repository settings:
+To use the CI/CD pipelines, you need to add your credentials and application secrets to your GitHub repository settings under **Settings > Secrets and variables > Actions**.
+
+The `deploy.yml` workflow is generic. It passes all repository secrets from GitHub to Ansible, which then uses your `ansible/secrets/secrets.yaml` file to find the required values. For each `env_var` in `secrets.yaml`, you must create a corresponding secret in your GitHub repository.
+
+**Required GitHub Secrets:**
 
 - `CLOUDSTACK_API_URL`
 - `CLOUDSTACK_API_KEY`
 - `CLOUDSTACK_SECRET_KEY`
-- `SSH_PRIVATE_KEY`: The private key for SSH access to the nodes.
+- `SSH_PRIVATE_KEY`
+- Any application secrets defined in `ansible/secrets/secrets.yaml` (e.g., `MYSQL_ROOT_PASSWORD`, `WORDPRESS_DB_PASSWORD`).
 - `DOCKER_REGISTRY_URL` (optional)
 - `DOCKER_REGISTRY_USERNAME` (optional)
 - `DOCKER_REGISTRY_PASSWORD` (optional)

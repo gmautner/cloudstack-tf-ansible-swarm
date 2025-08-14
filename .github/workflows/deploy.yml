@@ -46,9 +46,5 @@ jobs:
           ssh-keyscan -H $(cd terraform && terraform output -json instance_ips | jq -r '.[]') >> ~/.ssh/known_hosts
 
       - name: Run Ansible Playbook
-        env:
-          DOCKER_REGISTRY_URL: ${{ secrets.DOCKER_REGISTRY_URL }}
-          DOCKER_REGISTRY_USERNAME: ${{ secrets.DOCKER_REGISTRY_USERNAME }}
-          DOCKER_REGISTRY_PASSWORD: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
-        run: ansible-playbook -i inventory.yml playbook.yml
+        run: ansible-playbook -i inventory.yml playbook.yml --extra-vars "secrets_context=${{ toJSON(secrets) }}"
         working-directory: ./ansible
