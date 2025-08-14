@@ -86,9 +86,10 @@ This will:
 
 This template provides a collection of pre-configured stacks in the `ansible/example_stacks` directory. To deploy a stack, simply copy its subdirectory into the `ansible/stacks` directory.
 
-For example, to deploy Traefik and Portainer:
+For example, to deploy Traefik and Portainer, you would also need the base networks:
 
 ```bash
+cp -r ansible/example_stacks/00-networks ansible/stacks/
 cp -r ansible/example_stacks/01-traefik ansible/stacks/
 cp -r ansible/example_stacks/portainer ansible/stacks/
 ```
@@ -97,7 +98,18 @@ The Ansible playbook will automatically deploy all stacks found in the `ansible/
 
 ### Adding Your Own Stacks
 
-Place your Docker Compose files for your applications inside the `ansible/stacks/` directory. The playbook will automatically find and deploy any `docker-compose.yml` files in this directory. You can also add your new stacks to `ansible/example_stacks` to keep them as reference.
+To add your own application, create a new subdirectory within `ansible/stacks/`. Inside this new folder, place your `docker-compose.yml` file.
+
+For example, to add a new stack called `my-app`, you would create the following structure:
+
+```
+ansible/
+└── stacks/
+    └── my-app/
+        └── docker-compose.yml
+```
+
+The playbook will automatically find and deploy it. You can also add your new stacks to `ansible/example_stacks` to keep them as reference.
 
 ## CI/CD with GitHub Actions
 
