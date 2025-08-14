@@ -1,268 +1,150 @@
-# CloudStack Terraform + Ansible Docker Swarm
+# CloudStack Terraform + Ansible Docker Swarm Template
 
-Este projeto implanta uma infraestrutura completa de WordPress + MySQL no CloudStack usando Terraform para provisionamento de infraestrutura e Ansible para configuração do Docker Swarm.
+This project provides a reusable template for deploying a Docker Swarm cluster on CloudStack. It uses Terraform for infrastructure provisioning and Ansible for configuring the Swarm cluster and deploying services.
 
-## Arquitetura
+## Features
 
-A infraestrutura consiste em:
+- **Infrastructure as Code**: Defines the entire infrastructure (VMs, networks, load balancers) in Terraform.
+- **Automated Configuration**: Uses Ansible to set up Docker Swarm, configure nodes, and deploy stacks.
+- **Reusable Base Stacks**: Includes optional, pre-configured base stacks for networking, reverse proxy (Traefik), and monitoring (Prometheus, Grafana, Loki).
+- **Customizable**: Easily extendable with your own application stacks.
+- **CI/CD Ready**: Comes with example GitHub Actions workflows for automated deployment and destruction.
+- **Simplified Workflow**: A `Makefile` provides simple commands for common operations.
 
-- **3 nós Manager** (instâncias `large` com discos de dados de 50GB) - Gerenciadores do Docker Swarm
-- **2 nós Worker** (configuráveis) - WordPress (`micro` + 75GB) e MySQL (`medium` + 90GB)
-- **Rede isolada** com IP público e balanceamento de carga
-- **Proxy reverso Traefik** com certificados SSL Let's Encrypt
+## How to Use This Template
 
-## Pré-requisitos
+1.  **Create Your Repository**: Click the "Use this template" button at the top of the repository page to create a new repository based on this template.
+2.  **Clone Your Repository**: Clone the new repository to your local machine.
+
+    ```bash
+    git clone https://github.com/your-username/your-new-repo.git
+    cd your-new-repo
+    ```
+
+## Quick Start
+
+### 1. Prerequisites
 
 - Terraform >= 1.0
-- Ansible com coleção `community.docker`
-- As credenciais da API CloudStack devem ser fornecidas através das variáveis de ambiente `CLOUDSTACK_API_URL`, `CLOUDSTACK_API_KEY` e `CLOUDSTACK_SECRET_KEY`.
-- Par de chaves SSH
+- Ansible >= 2.10
+- CloudStack API Credentials
+- An SSH key pair
 
-## Início Rápido
+### 2. Configure Credentials
 
-### 1. Definir Variáveis de Ambiente
-
-```bash
-export CLOUDSTACK_API_URL="https://painel-cloud.locaweb.com.br/client/api"
-export CLOUDSTACK_API_KEY="sua-api-key"
-export CLOUDSTACK_SECRET_KEY="sua-secret-key"
-export MYSQL_ROOT_PASSWORD="senha-root-segura"
-export WORDPRESS_DB_PASSWORD="senha-wordpress-segura"
-```
-
-#### (Opcional) Login em Container Registry
-
-Para fazer login em um container registry (para imagens privadas), você pode definir estas variáveis antes de executar o playbook. Se a senha estiver vazia, o playbook fará logout e removerá as credenciais salvas do host.
+Export your CloudStack API credentials as environment variables:
 
 ```bash
-# Padrões se não definidos:
-# - DOCKER_REGISTRY_URL → Docker Hub (https://index.docker.io/v1/)
-# - DOCKER_REGISTRY_USERNAME → "nobody"
-
-export DOCKER_REGISTRY_URL="https://ghcr.io"          # opcional
-export DOCKER_REGISTRY_USERNAME="meu-usuario"         # opcional
-export DOCKER_REGISTRY_PASSWORD="minha-senha-ou-token" # necessário para login
+export CLOUDSTACK_API_URL="your-cloudstack-api-url"
+export CLOUDSTACK_API_KEY="your-api-key"
+export CLOUDSTACK_SECRET_KEY="your-secret-key"
 ```
 
-- Se `DOCKER_REGISTRY_PASSWORD` estiver definido (não vazio), o playbook fará login no registry informado (ou Docker Hub por padrão).
-- Se `DOCKER_REGISTRY_PASSWORD` estiver vazio, o playbook fará logout do registry informado (ou do Docker Hub por padrão) e removerá as credenciais do host.
-- O deploy das stacks usa sempre `with_registry_auth: true`; se não houver login prévio, nada é encaminhado (imagens públicas funcionam; imagens privadas exigem credenciais válidas).
+### 3. Configure Your Cluster
 
-### 2. Configurar Variáveis do Terraform
+- **Terraform Variables**: Copy `terraform/terraform.tfvars.example` to `terraform/terraform.tfvars` and customize it, especially the `ssh_public_key`.
 
-Copie o arquivo de exemplo e edite as variáveis em `terraform/terraform.tfvars`:
+    ```bash
+    cp terraform/terraform.tfvars.example terraform/terraform.tfvars
+    ```
+
+- **Ansible Variables (Optional)**: To override default settings, such as which base stacks to deploy, create a `ansible/vars.yml` file and define your variables there.
+
+    ```yaml
+    # ansible/vars.yml
+    deploy_traefik: true
+    deploy_monitoring: false
+    ```
+
+### 4. Deploy
+
+Use the `Makefile` to deploy your entire infrastructure and stacks with a single command:
 
 ```bash
-cp terraform/terraform.tfvars.example terraform/terraform.tfvars
-# Edite terraform/terraform.tfvars com sua chave pública SSH
+make deploy
 ```
 
-### 3. Implantar Infraestrutura
+This will:
+1.  Initialize Terraform and apply the configuration to create the CloudStack resources.
+2.  Generate an Ansible inventory file.
+3.  Run the Ansible playbook to configure Docker Swarm and deploy the stacks.
 
-Execute os comandos do Terraform dentro do diretório `terraform`:
+## Project Structure
 
-```bash
-cd terraform
+- `.github/workflows/`: Example GitHub Actions workflows.
+- `ansible/`: Ansible configuration.
+  - `base_stacks/`: Core, reusable stacks (networks, traefik, monitoring).
+  - `stacks/`: Your custom application stacks (examples included).
+  - `playbook.yml`: The main Ansible playbook.
+  - `inventory.yml`: Ansible inventory file (generated by Terraform).
+- `terraform/`: Terraform configuration for the CloudStack infrastructure.
+- `Makefile`: Simplified commands for deployment and management.
 
-# Inicializar Terraform
-terraform init
+## Customization
 
-# Validar Terraform
-terraform validate
+### Adding Your Own Stacks
 
-# Planejar implantação
-terraform plan
+Place your Docker Compose files for your applications inside the `ansible/stacks/` directory. The Ansible playbook will automatically find and deploy any `docker-compose.yml` files in this directory.
 
-# Aplicar configuração
-terraform apply
-```
+### Enabling/Disabling Base Stacks
 
-### 4. Implantar Docker Swarm e Aplicações
-
-O inventário do Ansible é gerado automaticamente pelo Terraform em `ansible/inventory.yml`.
-
-```bash
-cd ansible
-
-# Instalar dependências do Ansible
-ansible-galaxy collection install -r collections/requirements.yml
-
-# Implantar Docker Swarm
-ansible-playbook -i inventory.yml playbook.yml
-```
-
-## Configuração
-
-### Variáveis do Terraform
-
-| Variável | Descrição | Padrão |
-|----------|-----------|--------|
-| `ssh_public_key` | Chave pública SSH para acesso às instâncias | **Obrigatório** |
-| `network_offering_name` | Oferta de rede CloudStack | `"Default Guest Network"` |
-| `template_name` | Nome do template do SO | `"Ubuntu 24.04 (Noble Numbat)"` |
-| `disk_offering_name` | Oferta de disco de dados | `"data.disk.general"` |
-| `allowed_ssh_cidr_blocks` | Restrição de acesso SSH | `["0.0.0.0/0"]` |
-| `workers` | Configuração dos nós worker | Veja `terraform/variables.tf` |
-
-### Acesso à Rede
-
-- **HTTP/HTTPS**: Portas 80, 443 → Balanceamento de carga para `manager-1`
-- **Acesso SSH**:
-  - `manager-1`: porta 22001
-  - `manager-2`: porta 22002  
-  - `manager-3`: porta 22003
-  - worker `wp`: porta 22004
-  - worker `mysql`: porta 22005
-
-## Serviços
-
-Após a implantação, os seguintes serviços estarão disponíveis:
-
-- **WordPress**: `https://portal.cluster-1.giba.tech` (ou o domínio configurado nos arquivos Docker Compose)
-- **Dashboard Traefik**: `https://traefik.cluster-1.giba.tech` (ou o domínio configurado nos arquivos Docker Compose)
-
-### Autenticação Básica (Traefik)
-
-Para proteger serviços com autenticação básica via Traefik, use um segredo do Docker Swarm contendo o conteúdo de um `.htpasswd` (bcrypt). O segredo é criado automaticamente pelo playbook a partir de uma variável de ambiente.
-
-Passos:
-
-1) Gere a linha de `.htpasswd` (usuário e hash bcrypt) usando `htpasswd` e exporte como variável de ambiente. Se necessário, instale a ferramenta: Ubuntu/Debian/WSL → `sudo apt-get install -y apache2-utils`; RHEL/CentOS/Rocky → `sudo yum install -y httpd-tools`; macOS (Homebrew) → `brew install httpd`.
-```bash
-export TRAEFIK_BASICAUTH=$(htpasswd -nbBC 10 admin 'SUA_SENHA_FORTE')
-```
-
-2) Execute o playbook normalmente. A task "Create Docker secrets from environment variables" criará/atualizará o segredo `traefik_basicauth` automaticamente a partir de `TRAEFIK_BASICAUTH`:
-
-```bash
-cd ansible
-ansible-playbook -i inventory.yml playbook.yml
-```
-
-3) O Traefik consumirá o segredo `traefik_basicauth` e lerá o arquivo em `/run/secrets/traefik_basicauth` no middleware `basic-auth`.
-
-Observações:
-- Para aplicar a proteção em um serviço, adicione o middleware `basic-auth@docker` nas labels do roteador do serviço (já aplicado para Prometheus e Alertmanager neste projeto).
-
-## Notas Importantes de Segurança
-
-### Estado do Terraform
-
-Por padrão, o Terraform armazena o estado da infraestrutura em um arquivo local `terraform/terraform.tfstate`. Este arquivo contém informações sensíveis e **não deve ser commitado no controle de versão**.
-
-Para colaboração ou uso em produção, configure um backend remoto no arquivo `terraform/main.tf`:
-
-```hcl
-terraform {
-  backend "s3" {
-    bucket = "seu-bucket-terraform-state"
-    key    = "cloudstack-swarm/terraform.tfstate"
-    region = "us-west-2"
-  }
-}
-```
-
-### Versionamento de Dependências
-
-Para garantir implantações consistentes, este projeto trava as versões das dependências:
-
-- **Terraform**: Versão do provider CloudStack fixada em `terraform/main.tf`
-- **Ansible**: Versões das coleções especificadas em `ansible/collections/requirements.yml`
-
-## Labels de Nós do Swarm
-
-Os nós worker podem receber labels personalizados que são úteis para constraints de placement de serviços Docker. Configure labels opcionais no arquivo `terraform.tfvars`:
-
-```hcl
-workers = {
-  "wp" = { 
-    plan = "medium", 
-    data_size_gb = 105,
-    labels = {
-      "type" = "web"
-      "service" = "wordpress"
-      "zone" = "public"
-    }
-  },
-  "mysql" = { 
-    plan = "large", 
-    data_size_gb = 90,
-    labels = {
-      "type" = "database"
-      "service" = "mysql"
-      "zone" = "private"
-    }
-  },
-}
-```
-
-Os labels são aplicados automaticamente pelo Ansible durante a configuração do swarm e podem ser usados em docker-compose.yml para placement constraints:
+You can control which base stacks are deployed by setting variables. The defaults are in `ansible/playbook.yml`. You can override them by creating an `ansible/inventory.yml` with a `[all:vars]` section, for example:
 
 ```yaml
-services:
-  wordpress:
-    # ... outras configurações
-    deploy:
-      placement:
-        constraints:
-          - node.labels.type == web
-          - node.labels.service == wordpress
+# ansible/inventory.yml
+all:
+  vars:
+    deploy_traefik: true
+    deploy_monitoring: false
 ```
 
-## Persistência de Dados
+The playbook looks for `ansible/base_stacks/00-networks`, `ansible/base_stacks/01-traefik` and `ansible/base_stacks/02-monitoring`. It will always deploy the `00-networks` stack.
 
-> **⚠️ ATENÇÃO CRÍTICA: Named Volumes no Docker Swarm**
->
-> **SE você usar named volumes no Docker Swarm, eles serão provisionados por padrão no disco de dados local anexado a cada nó.** Para garantir a persistência dos dados entre reinicializações e evitar perda de dados, é **OBRIGATÓRIO** restringir o serviço a um nó específico usando o filtro `node.hostname` nas constraints de placement.
->
-> **Exemplo:**
->
-> ```yaml
-> services:
->   meu-servico:
->     image: postgres:15
->     volumes:
->       - dados_postgres:/var/lib/postgresql/data
->     deploy:
->       placement:
->         constraints:
->           - node.hostname == nome-do-no-especifico
->
-> volumes:
->   dados_postgres:
-> ```
->
-> **Sem essa constraint, o Docker Swarm pode agendar o serviço em qualquer nó, resultando em perda de dados quando o container for executado em um nó diferente!**
+## CI/CD with GitHub Actions
 
-## Solução de Problemas
+This template includes two example workflows in `.github/workflows/`:
 
-### Problemas de Conexão SSH
+- `deploy.yml`: Triggered on push to `main`. Deploys the infrastructure and stacks.
+- `destroy.yml`: Triggered manually. Destroys the infrastructure.
+
+To use them, you need to add the following secrets to your GitHub repository settings:
+
+- `CLOUDSTACK_API_URL`
+- `CLOUDSTACK_API_KEY`
+- `CLOUDSTACK_SECRET_KEY`
+- `SSH_PRIVATE_KEY`: The private key for SSH access to the nodes.
+- `DOCKER_REGISTRY_URL` (optional)
+- `DOCKER_REGISTRY_USERNAME` (optional)
+- `DOCKER_REGISTRY_PASSWORD` (optional)
+
+## Updating Your Repository
+
+To get updates from this template repository, add it as an `upstream` remote:
 
 ```bash
-# Testar conexão SSH para manager-1
-ssh -p 22001 ubuntu@<ip-publico>
+git remote add upstream https://github.com/gmautner/cloudstack-tf-ansible-swarm.git
 ```
 
-### Status do Docker Swarm
+Then, you can fetch and merge updates:
 
 ```bash
-# Verificar status do swarm em qualquer manager
-docker node ls
+git fetch upstream
+git merge upstream/main
 ```
 
-### Logs dos Serviços
+## Makefile Commands
+
+- `make help`: Show available commands.
+- `make deploy`: Deploy the infrastructure and stacks.
+- `make destroy`: Destroy the infrastructure.
+- `make ssh`: SSH into the first manager node.
+
+## Cleaning Up
+
+To destroy all resources created by this project, run:
 
 ```bash
-# Visualizar logs dos serviços
-docker service logs <nome-do-servico>
+make destroy
 ```
 
-## Limpeza
-
-```bash
-# Destruir toda a infraestrutura
-cd terraform
-terraform destroy
-```
-
-**Aviso**: Isso irá deletar permanentemente todas as instâncias e dados.
+**Warning**: This will permanently delete all VMs, volumes, and other resources.
