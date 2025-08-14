@@ -270,10 +270,7 @@
   hosts: managers[0]
   become: true
   vars:
-    base_stacks_directory: "{{ playbook_dir }}/base_stacks"
-    user_stacks_directory: "{{ playbook_dir }}/stacks"
-    deploy_traefik: true
-    deploy_monitoring: true
+    stacks_directory: "{{ playbook_dir }}/stacks"
   tasks:
     - name: Install python3-jsondiff for stack management
       apt:
@@ -313,55 +310,13 @@
         - secrets_config.docker_secrets is defined
         - lookup('env', item.env_var) != ""
 
-    - name: Clean stacks directory on NFS mount
-      file:
-        path: /opt/stacks
-        state: absent
-
-    - name: Recreate stacks directory on NFS mount
-      file:
-        path: /opt/stacks
-        state: directory
-
-    - name: Copy networks base stack to NFS mount
+    - name: Copy entire stacks directory to NFS mount
       synchronize:
-        src: "{{ base_stacks_directory }}/00-networks/"
-        dest: /opt/stacks/00-networks/
-        delete: true
-        archive: false
-        recursive: true
-      delegate_to: localhost
-      become: false
-
-    - name: Copy traefik base stack to NFS mount
-      synchronize:
-        src: "{{ base_stacks_directory }}/01-traefik/"
-        dest: /opt/stacks/01-traefik/
-        delete: true
-        archive: false
-        recursive: true
-      delegate_to: localhost
-      become: false
-      when: deploy_traefik | bool
-
-    - name: Copy monitoring base stack to NFS mount
-      synchronize:
-        src: "{{ base_stacks_directory }}/02-monitoring/"
-        dest: /opt/stacks/02-monitoring/
-        delete: true
-        archive: false
-        recursive: true
-      delegate_to: localhost
-      become: false
-      when: deploy_monitoring | bool
-
-    - name: Copy user stacks to NFS mount
-      synchronize:
-        src: "{{ user_stacks_directory }}/"
+        src: "{{ stacks_directory }}/"
         dest: /opt/stacks/
-        delete: false
-        archive: false
-        recursive: true
+        delete: true
+        archive: false # don't copy owner and perms from localhost
+        recursive: true # needed because we turned off archive
       delegate_to: localhost
       become: false
 
