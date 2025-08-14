@@ -48,14 +48,6 @@ export CLOUDSTACK_SECRET_KEY="your-secret-key"
     cp terraform/terraform.tfvars.example terraform/terraform.tfvars
     ```
 
-- **Ansible Variables (Optional)**: To override default settings, such as which base stacks to deploy, create a `ansible/vars.yml` file and define your variables there.
-
-    ```yaml
-    # ansible/vars.yml
-    deploy_traefik: true
-    deploy_monitoring: false
-    ```
-
 ### 4. Deploy
 
 Use the `Makefile` to deploy your entire infrastructure and stacks with a single command:
@@ -110,6 +102,38 @@ ansible/
 ```
 
 The playbook will automatically find and deploy it. You can also add your new stacks to `ansible/example_stacks` to keep them as reference.
+
+### Managing Secrets
+
+Application secrets (like database passwords or API keys) are managed via Ansible. This template uses environment variables to create Docker Swarm secrets, which are then securely mounted into your service containers.
+
+To configure your secrets:
+
+1.  **Copy the Example File**: Copy `ansible/secrets/secrets.yaml.example` to `ansible/secrets/secrets.yaml`.
+
+    ```bash
+    cp ansible/secrets/secrets.yaml.example ansible/secrets/secrets.yaml
+    ```
+
+2.  **Define Your Secrets**: Edit `ansible/secrets/secrets.yaml` to define the secrets your applications need. Each secret is mapped to an environment variable that you will need to set.
+
+    ```yaml
+    # ansible/secrets/secrets.yaml
+    docker_secrets:
+      - name: mysql_root_password
+        env_var: MYSQL_ROOT_PASSWORD
+      - name: wordpress_db_password
+        env_var: WORDPRESS_DB_PASSWORD
+    ```
+
+3.  **Set Environment Variables**: Before running `make deploy`, export the environment variables corresponding to your secrets.
+
+    ```bash
+    export MYSQL_ROOT_PASSWORD="your-secure-root-password"
+    export WORDPRESS_DB_PASSWORD="your-secure-db-password"
+    ```
+
+The `ansible/secrets/secrets.yaml` file is included in `.gitignore` to prevent you from accidentally committing your secrets to version control.
 
 ## CI/CD with GitHub Actions
 
