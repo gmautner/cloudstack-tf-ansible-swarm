@@ -270,7 +270,8 @@
   hosts: managers[0]
   become: true
   vars:
-    stacks_directory: "{{ playbook_dir }}/stacks"
+    stacks_dir: "{{ playbook_dir }}/../../environments/dev/stacks"
+    secrets_file: "{{ playbook_dir }}/../../environments/dev/secrets.yaml"
   tasks:
     - name: Install python3-jsondiff for stack management
       apt:
@@ -280,7 +281,7 @@
 
     - name: Load secrets configuration
       include_vars:
-        file: "{{ playbook_dir }}/secrets/secrets.yaml"
+        file: "{{ secrets_file }}"
         name: secrets_config
 
     - name: Logout from registry if password env var is empty
@@ -312,7 +313,7 @@
 
     - name: Copy entire stacks directory to NFS mount
       synchronize:
-        src: "{{ stacks_directory }}/"
+        src: "{{ stacks_dir }}/"
         dest: /opt/stacks/
         delete: true
         archive: false # don't copy owner and perms from localhost

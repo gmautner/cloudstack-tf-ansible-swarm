@@ -1,25 +1,45 @@
-# CloudStack Terraform + Ansible Docker Swarm Template
+# CloudStack Terraform & Ansible Swarm Template
 
-This project provides a reusable template for deploying a Docker Swarm cluster on CloudStack. It uses Terraform for infrastructure provisioning and Ansible for configuring the Swarm cluster and deploying services.
+This repository provides a template for deploying multiple, environment-specific Docker Swarm clusters on CloudStack using Terraform and Ansible.
 
 ## Features
 
-- **Infrastructure as Code**: Defines the entire infrastructure (VMs, networks, load balancers) in Terraform.
-- **Automated Configuration**: Uses Ansible to set up Docker Swarm, configure nodes, and deploy stacks.
-- **Reusable Base Stacks**: Includes optional, pre-configured base stacks for networking, reverse proxy (Traefik), and monitoring (Prometheus, Grafana, Loki).
-- **Customizable**: Easily extendable with your own application stacks.
-- **CI/CD Ready**: Comes with example GitHub Actions workflows for automated deployment and destruction.
-- **Simplified Workflow**: A `Makefile` provides simple commands for common operations.
+- **Multi-Environment**: Manage `dev`, `prod`, or any other environment from a single repository.
+- **Centralized Configuration**: All configuration for an environment (Terraform variables, secrets, stacks) is stored in one place.
+- **Infrastructure as Code**: The entire infrastructure is defined with Terraform.
+- **State Isolation**: Terraform state for each environment is stored in a separate file in a shared S3 backend, ensuring complete isolation.
+- **Automated Configuration**: Ansible configures the Swarm cluster and deploys your application stacks.
+- **CI/CD Ready**: Deploy any environment to CloudStack using GitHub Actions.
+- **Simplified Workflow**: A `Makefile` provides simple, environment-aware commands.
 
-## How to Use This Template
+## Project Structure
 
-1.  **Create Your Repository**: Click the "Use this template" button at the top of the repository page to create a new repository based on this template.
-2.  **Clone Your Repository**: Clone the new repository to your local machine.
+```
+.
+├── environments/
+│   ├── dev/
+│   │   ├── terraform.tfvars
+│   │   ├── secrets.yaml
+│   │   └── stacks/
+│   └── prod/
+│       ├── terraform.tfvars
+│       ├── secrets.yaml
+│       └── stacks/
+│
+├── ansible/
+│   ├── example_stacks/
+│   └── ... (core Ansible logic)
+│
+├── terraform/
+│   └── ... (core Terraform logic)
+│
+└── Makefile
+```
 
-    ```bash
-    git clone https://github.com/your-username/your-new-repo.git
-    cd your-new-repo
-    ```
+- `environments/`: Contains all environment-specific configurations.
+- `ansible/`: Contains the core, reusable Ansible playbook.
+  - `example_stacks/`: A collection of sample stacks to copy into your environments.
+- `terraform/`: Contains the core, reusable Terraform configuration.
 
 ## Quick Start
 
@@ -27,158 +47,75 @@ This project provides a reusable template for deploying a Docker Swarm cluster o
 
 - Terraform >= 1.0
 - Ansible >= 2.10
-- CloudStack API Credentials
-- An SSH key pair
+- CloudStack API Credentials & SSH Key Pair
 
-### 2. Configure Credentials
+### 2. Configure S3 Backend
 
-Export your CloudStack API credentials as environment variables:
+This template uses an S3 bucket to store the Terraform state.
 
-```bash
-export CLOUDSTACK_API_URL="your-cloudstack-api-url"
-export CLOUDSTACK_API_KEY="your-api-key"
-export CLOUDSTACK_SECRET_KEY="your-secret-key"
-```
+1.  **Create an S3 Bucket**: Create an S3-compatible bucket to store your Terraform state files.
+2.  **Configure Backend**: Edit `terraform/main.tf` and set the `bucket`, `region`, and `endpoint` for your S3 provider.
+3.  **Set Credentials**: Provide your S3 credentials.
+    - **Locally**: Export them as environment variables.
+      ```bash
+      export AWS_ACCESS_KEY_ID="your-s3-access-key"
+      export AWS_SECRET_ACCESS_KEY="your-s3-secret-key"
+      ```
+    - **In CI/CD**: Add `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` to your GitHub repository secrets.
 
-### 3. Configure Your Cluster
+### 3. Configure Your First Environment
 
-- **Terraform Variables**: Copy `terraform/terraform.tfvars.example` to `terraform/terraform.tfvars` and customize it, especially the `ssh_public_key`.
+This template comes with a `dev` and `prod` environment. Let's configure `dev`.
+
+1.  **Customize Terraform Variables**: Edit `environments/dev/terraform.tfvars` with your settings, such as your SSH public key.
+
+2.  **Define Application Stacks**: The `environments/dev/stacks/` directory determines which applications are deployed. Copy stacks from `ansible/example_stacks/` into this directory to select them for deployment.
 
     ```bash
-    cp terraform/terraform.tfvars.example terraform/terraform.tfvars
+    # Example: Deploy Traefik and Portainer to the 'dev' environment
+    cp -r ansible/example_stacks/00-networks environments/dev/stacks/
+    cp -r ansible/example_stacks/01-traefik environments/dev/stacks/
+    cp -r ansible/example_stacks/portainer environments/dev/stacks/
     ```
+
+3.  **Define Application Secrets**: Edit `environments/dev/secrets.yaml` to list the Docker secrets your applications require. This file maps secret names to the environment variables that will provide their values.
+
+4.  **Set Secret Values**: Provide the actual secret values.
+    - **Locally**: Export them as environment variables.
+      ```bash
+      export CLOUDSTACK_API_URL="..."
+      export CLOUDSTACK_API_KEY="..."
+      export CLOUDSTACK_SECRET_KEY="..."
+      export AWS_ACCESS_KEY_ID="..."
+      export AWS_SECRET_ACCESS_KEY="..."
+      export MYSQL_ROOT_PASSWORD="your-dev-db-password"
+      ```
+    - **In CI/CD**: Add them to your GitHub repository secrets.
 
 ### 4. Deploy
 
-Use the `Makefile` to deploy your entire infrastructure and stacks with a single command:
+Use the `Makefile` to deploy your environment. The `ENV` variable specifies which environment to target. It defaults to `dev`.
 
 ```bash
+# Deploy the 'dev' environment
 make deploy
+
+# Deploy the 'prod' environment
+make deploy ENV=prod
 ```
 
-This will:
-1.  Initialize Terraform and apply the configuration to create the CloudStack resources.
-2.  Generate an Ansible inventory file.
-3.  Run the Ansible playbook to configure Docker Swarm and deploy the stacks.
-
-## Project Structure
-
-- `.github/workflows/`: Example GitHub Actions workflows.
-- `ansible/`: Ansible configuration.
-  - `example_stacks/`: A collection of all available stacks (base services and applications).
-  - `stacks/`: The directory where you place the stacks you want to deploy.
-  - `playbook.yml`: The main Ansible playbook.
-  - `inventory.yml`: Ansible inventory file (generated by Terraform).
-- `terraform/`: Terraform configuration for the CloudStack infrastructure.
-- `Makefile`: Simplified commands for deployment and management.
-
-## Customization
-
-### Selecting Stacks to Deploy
-
-This template provides a collection of pre-configured stacks in the `ansible/example_stacks` directory. To deploy a stack, simply copy its subdirectory into the `ansible/stacks` directory.
-
-For example, to deploy Traefik and Portainer, you would also need the base networks:
-
-```bash
-cp -r ansible/example_stacks/00-networks ansible/stacks/
-cp -r ansible/example_stacks/01-traefik ansible/stacks/
-cp -r ansible/example_stacks/portainer ansible/stacks/
-```
-
-The Ansible playbook will automatically deploy all stacks found in the `ansible/stacks` directory. The numbered prefixes on some stacks (e.g., `00-networks`, `01-traefik`) ensure they are deployed in the correct order.
-
-### Adding Your Own Stacks
-
-To add your own application, create a new subdirectory within `ansible/stacks/`. Inside this new folder, place your `docker-compose.yml` file.
-
-For example, to add a new stack called `my-app`, you would create the following structure:
-
-```
-ansible/
-└── stacks/
-    └── my-app/
-        └── docker-compose.yml
-```
-
-The playbook will automatically find and deploy it. You can also add your new stacks to `ansible/example_stacks` to keep them as reference.
-
-### Managing Secrets
-
-Application secrets (like database passwords or API keys) are managed via Ansible. This template uses environment variables to create Docker Swarm secrets, which are then securely mounted into your service containers. The file `ansible/secrets/secrets.yaml` defines which secrets to create from which environment variables.
-
-To configure your secrets:
-
-1.  **Define Your Secrets**: Edit `ansible/secrets/secrets.yaml` to define the secrets your applications need. You can add or remove entries from this file to match your requirements. It is safe to commit this file to version control, as it only contains the names of the secrets and the environment variables they map to, not the secret values themselves.
-
-    ```yaml
-    # ansible/secrets/secrets.yaml
-    docker_secrets:
-      - name: mysql_root_password
-        env_var: MYSQL_ROOT_PASSWORD
-      - name: wordpress_db_password
-        env_var: WORDPRESS_DB_PASSWORD
-    ```
-
-2.  **Set Environment Variables Locally**: Before running `make deploy` locally, export the environment variables corresponding to your secrets.
-
-    ```bash
-    export MYSQL_ROOT_PASSWORD="your-secure-root-password"
-    export WORDPRESS_DB_PASSWORD="your-secure-db-password"
-    ```
-
-An example file, `ansible/secrets/secrets.yaml.example`, is provided for reference.
+This command will automatically use the correct S3 state file path and configuration files for the specified environment.
 
 ## CI/CD with GitHub Actions
 
-This template includes two example workflows in `.github/workflows/`:
+- Go to the **Actions** tab in your GitHub repository.
+- Select the **Deploy Infrastructure** workflow.
+- Click **Run workflow**, choose the environment (`dev` or `prod`), and click **Run workflow**.
 
-- `deploy.yml`: Triggered on push to `main`. Deploys the infrastructure and stacks.
-- `destroy.yml`: Triggered manually. Destroys the infrastructure.
-
-To use the CI/CD pipelines, you need to add your credentials and application secrets to your GitHub repository settings under **Settings > Secrets and variables > Actions**.
-
-The `deploy.yml` workflow is generic. It passes all repository secrets from GitHub to Ansible, which then uses your `ansible/secrets/secrets.yaml` file to find the required values. For each `env_var` in `secrets.yaml`, you must create a corresponding secret in your GitHub repository.
-
-**Required GitHub Secrets:**
-
-- `CLOUDSTACK_API_URL`
-- `CLOUDSTACK_API_KEY`
-- `CLOUDSTACK_SECRET_KEY`
-- `SSH_PRIVATE_KEY`
-- Any application secrets defined in `ansible/secrets/secrets.yaml` (e.g., `MYSQL_ROOT_PASSWORD`, `WORDPRESS_DB_PASSWORD`).
-- `DOCKER_REGISTRY_URL` (optional)
-- `DOCKER_REGISTRY_USERNAME` (optional)
-- `DOCKER_REGISTRY_PASSWORD` (optional)
-
-## Updating Your Repository
-
-To get updates from this template repository, add it as an `upstream` remote:
-
-```bash
-git remote add upstream https://github.com/gmautner/cloudstack-tf-ansible-swarm.git
-```
-
-Then, you can fetch and merge updates:
-
-```bash
-git fetch upstream
-git merge upstream/main
-```
+The pipeline will deploy the selected environment using the secrets you've configured in your repository's **Settings > Secrets and variables > Actions**. For every `env_var` in your environment's `secrets.yaml`, you must create a corresponding secret in GitHub. You must also provide your `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` as secrets.
 
 ## Makefile Commands
 
-- `make help`: Show available commands.
-- `make deploy`: Deploy the infrastructure and stacks.
-- `make destroy`: Destroy the infrastructure.
-- `make ssh`: SSH into the first manager node.
-
-## Cleaning Up
-
-To destroy all resources created by this project, run:
-
-```bash
-make destroy
-```
-
-**Warning**: This will permanently delete all VMs, volumes, and other resources.
+- `make deploy ENV=prod`: Deploy the `prod` environment.
+- `make destroy ENV=prod`: Destroy the `prod` environment.
+- `make ssh ENV=prod`: SSH into the first manager of the `prod` environment.

@@ -1,0 +1,79 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/mysql_root_password
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wordpress
+      MYSQL_PASSWORD_FILE: /run/secrets/wordpress_db_password
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./config/my.cnf:/etc/mysql/conf.d/my.cnf:ro
+    networks:
+      - wp_network
+    secrets:
+      - mysql_root_password
+      - wordpress_db_password
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.hostname == mysql
+
+  wordpress:
+    image: wordpress:php8.3-apache
+    environment:
+      WORDPRESS_DB_HOST: mysql:3306
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD_FILE: /run/secrets/wordpress_db_password
+    volumes:
+      - wordpress_data:/var/www/html
+    networks:
+      - traefik_network
+      - wp_network
+    secrets:
+      - wordpress_db_password
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.hostname == wp
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.wordpress.rule=Host(`portal.${DOMAIN_SUFFIX}`)
+        - traefik.http.routers.wordpress.entrypoints=websecure
+        - traefik.http.routers.wordpress.tls.certresolver=letsencrypt
+        - traefik.http.services.wordpress.loadbalancer.server.port=80
+
+  hello:
+    image: registry.gitlab.platform.lwsa.tech/labs/python-web-app:latest
+    networks:
+      - traefik_network
+      - wp_network
+    deploy:
+      replicas: 1
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.hello.rule=Host(`hello.cluster-1.giba.tech`)
+        - traefik.http.routers.hello.entrypoints=websecure
+        - traefik.http.routers.hello.tls.certresolver=letsencrypt
+        - traefik.http.services.hello.loadbalancer.server.port=5000
+
+volumes:
+  mysql_data:
+  wordpress_data:
+
+networks:
+  wp_network:
+    driver: overlay
+  traefik_network:
+    external: true
+
+secrets:
+  mysql_root_password:
+    external: true
+  wordpress_db_password:
+    external: true 
+  

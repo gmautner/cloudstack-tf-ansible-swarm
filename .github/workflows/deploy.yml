@@ -1,9 +1,16 @@
 name: Deploy Infrastructure
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+        - dev
+        - prod
 
 jobs:
   deploy:
@@ -15,36 +22,12 @@ jobs:
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v2
 
-      - name: Terraform Init
+      - name: Deploy Environment
         env:
           CLOUDSTACK_API_KEY: ${{ secrets.CLOUDSTACK_API_KEY }}
           CLOUDSTACK_API_URL: ${{ secrets.CLOUDSTACK_API_URL }}
           CLOUDSTACK_SECRET_KEY: ${{ secrets.CLOUDSTACK_SECRET_KEY }}
-        run: terraform init
-        working-directory: ./terraform
-
-      - name: Terraform Apply
-        env:
-          CLOUDSTACK_API_KEY: ${{ secrets.CLOUDSTACK_API_KEY }}
-          CLOUDSTACK_API_URL: ${{ secrets.CLOUDSTACK_API_URL }}
-          CLOUDSTACK_SECRET_KEY: ${{ secrets.CLOUDSTACK_SECRET_KEY }}
-        run: terraform apply -auto-approve
-        working-directory: ./terraform
-
-      - name: Set up Ansible
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y python3-pip
-          pip3 install ansible
-          ansible-galaxy collection install -r ansible/collections/requirements.yml
-
-      - name: Configure SSH
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/cluster-1
-          chmod 600 ~/.ssh/cluster-1
-          ssh-keyscan -H $(cd terraform && terraform output -json instance_ips | jq -r '.[]') >> ~/.ssh/known_hosts
-
-      - name: Run Ansible Playbook
-        run: ansible-playbook -i inventory.yml playbook.yml --extra-vars "secrets_context=${{ toJSON(secrets) }}"
-        working-directory: ./ansible
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          SECRETS_CONTEXT: ${{ toJSON(secrets) }}
+        run: make deploy ENV=${{ github.event.inputs.environment }}

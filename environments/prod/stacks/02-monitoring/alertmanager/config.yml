@@ -1,0 +1,13 @@
+global:
+  slack_api_url_file: /run/secrets/slack_api_url
+
+route:
+  receiver: 'slack'
+
+receivers:
+  - name: 'slack'
+    slack_configs:
+      - send_resolved: true
+        text: "{{ .CommonAnnotations.description }}"
+        username: 'Prometheus'
+        channel: '#swarm-iac-alerts'
