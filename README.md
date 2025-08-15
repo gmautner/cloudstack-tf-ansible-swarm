@@ -14,7 +14,7 @@ This repository provides a template for deploying multiple, environment-specific
 
 ## Project Structure
 
-```
+```text
 .
 ├── environments/
 │   ├── dev/
@@ -53,23 +53,25 @@ This repository provides a template for deploying multiple, environment-specific
 
 This template uses an S3 bucket to store the Terraform state.
 
-1.  **Create an S3 Bucket**: Create an S3-compatible bucket to store your Terraform state files.
-2.  **Configure Backend**: Edit `terraform/main.tf` and set the `bucket`, `region`, and `endpoint` for your S3 provider.
-3.  **Set Credentials**: Provide your S3 credentials.
+1. **Create an S3 Bucket**: Create an S3-compatible bucket to store your Terraform state files.
+2. **Configure Backend**: Edit `terraform/backend.tf` and set the `bucket`, `region`, and `endpoint` for your S3 provider.
+3. **Set Credentials**: Provide your S3 credentials.
     - **Locally**: Export them as environment variables.
+
       ```bash
       export AWS_ACCESS_KEY_ID="your-s3-access-key"
       export AWS_SECRET_ACCESS_KEY="your-s3-secret-key"
       ```
+
     - **In CI/CD**: Add `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` to your GitHub repository secrets.
 
 ### 3. Configure Your First Environment
 
 This template comes with a `dev` and `prod` environment. Let's configure `dev`.
 
-1.  **Customize Terraform Variables**: Edit `environments/dev/terraform.tfvars` with your settings, such as your SSH public key.
+1. **Customize Terraform Variables**: Edit `environments/dev/terraform.tfvars` with your settings, such as your SSH public key.
 
-2.  **Define Application Stacks**: The `environments/dev/stacks/` directory determines which applications are deployed. Copy stacks from `ansible/example_stacks/` into this directory to select them for deployment.
+2. **Define Application Stacks**: The `environments/dev/stacks/` directory determines which applications are deployed. Copy stacks from `ansible/example_stacks/` into this directory to select them for deployment.
 
     ```bash
     # Example: Deploy Traefik and Portainer to the 'dev' environment
@@ -78,10 +80,11 @@ This template comes with a `dev` and `prod` environment. Let's configure `dev`.
     cp -r ansible/example_stacks/portainer environments/dev/stacks/
     ```
 
-3.  **Define Application Secrets**: Edit `environments/dev/secrets.yaml` to list the Docker secrets your applications require. This file maps secret names to the environment variables that will provide their values.
+3. **Define Application Secrets**: Edit `environments/dev/secrets.yaml` to list the Docker secrets your applications require. This file maps secret names to the environment variables that will provide their values.
 
-4.  **Set Secret Values**: Provide the actual secret values.
+4. **Set Secret Values**: Provide the actual secret values.
     - **Locally**: Export them as environment variables.
+
       ```bash
       export CLOUDSTACK_API_URL="..."
       export CLOUDSTACK_API_KEY="..."
@@ -90,6 +93,7 @@ This template comes with a `dev` and `prod` environment. Let's configure `dev`.
       export AWS_SECRET_ACCESS_KEY="..."
       export MYSQL_ROOT_PASSWORD="your-dev-db-password"
       ```
+
     - **In CI/CD**: Add them to your GitHub repository secrets.
 
 ### 4. Deploy
