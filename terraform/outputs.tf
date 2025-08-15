@@ -52,6 +52,7 @@ output "snapshot_schedules" {
 # Generate Ansible inventory file
 resource "local_file" "ansible_inventory" {
   content = templatefile("${path.module}/inventory.tpl", {
+    cluster_name                = var.cluster_name
     public_ip                   = cloudstack_ipaddress.main.ip_address
     domain_suffix               = var.domain_suffix
     automatic_reboot            = var.automatic_reboot

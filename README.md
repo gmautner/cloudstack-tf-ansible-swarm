@@ -69,9 +69,11 @@ This template uses an S3 bucket to store the Terraform state.
 
 This template comes with a `dev` and `prod` environment. Let's configure `dev`.
 
-1. **Customize Terraform Variables**: Edit `environments/dev/terraform.tfvars` with your settings, such as your SSH public key.
+1. **Customize Terraform Variables**: Edit `environments/dev/terraform.tfvars` with your settings, such as your SSH public key and a unique `cluster_name`.
 
-2. **Define Application Stacks**: The `environments/dev/stacks/` directory determines which applications are deployed. Copy stacks from `ansible/example_stacks/` into this directory to select them for deployment.
+2. **Configure SSH Key**: Create an SSH key pair for your cluster. The private key's filename **must** match the `cluster_name` you defined in your `terraform.tfvars` file (e.g., if `cluster_name` is "cluster-1-dev", your private key must be at `~/.ssh/cluster-1-dev`).
+
+3. **Define Application Stacks**: The `environments/dev/stacks/` directory determines which applications are deployed. Copy stacks from `ansible/example_stacks/` into this directory to select them for deployment.
 
     ```bash
     # Example: Deploy Traefik and Portainer to the 'dev' environment
@@ -80,9 +82,9 @@ This template comes with a `dev` and `prod` environment. Let's configure `dev`.
     cp -r ansible/example_stacks/portainer environments/dev/stacks/
     ```
 
-3. **Define Application Secrets**: Edit `environments/dev/secrets.yaml` to list the Docker secrets your applications require. This file maps secret names to the environment variables that will provide their values.
+4. **Define Application Secrets**: Edit `environments/dev/secrets.yaml` to list the Docker secrets your applications require. This file maps secret names to the environment variables that will provide their values.
 
-4. **Set Secret Values**: Provide the actual secret values.
+5. **Set Secret Values**: Provide the actual secret values.
     - **Locally**: Export them as environment variables.
 
       ```bash
@@ -123,3 +125,5 @@ The pipeline will deploy the selected environment using the secrets you've confi
 - `make deploy ENV=prod`: Deploy the `prod` environment.
 - `make destroy ENV=prod`: Destroy the `prod` environment.
 - `make ssh ENV=prod`: SSH into the first manager of the `prod` environment.
+
+Your SSH private key's filename must match the `cluster_name` for the environment you are targeting.
