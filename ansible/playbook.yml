@@ -321,6 +321,21 @@
       delegate_to: localhost
       become: false
 
+    - name: Find docker-compose templates in NFS mount
+      find:
+        paths: /opt/stacks
+        patterns: "docker-compose.yml.j2"
+        recurse: true
+      register: compose_templates
+
+    # Render templates, stripping the .j2 extension from the destination filename
+    - name: Render docker-compose templates
+      template:
+        src: "{{ item.path }}"
+        dest: "{{ (item.path | splitext)[0] }}"
+      with_items: "{{ compose_templates.files }}"
+      when: compose_templates.files | length > 0
+
     - name: Find docker-compose files in NFS mount
       find:
         paths: /opt/stacks
