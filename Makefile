@@ -22,10 +22,12 @@ deploy:
 	cd terraform && terraform init -backend-config="key=env/$(ENV)/terraform.tfstate" && terraform apply -var-file=$(TF_VARS_FILE) -var="env=$(ENV)" -auto-approve
 	@echo "Deploying Docker Swarm and stacks for environment '$(ENV)'..."
 	@cd terraform && terraform init -backend-config="key=env/$(ENV)/terraform.tfstate"
-	@eval `ssh-agent -s`; \
-	terraform -chdir=terraform output -raw private_key | ssh-add -; \
-	cd ansible && ansible-playbook -i inventory.yml playbook.yml --extra-vars "$(ANSIBLE_VARS)" --extra-vars "secrets_context=$(SECRETS_CONTEXT)"; \
-	ssh-agent -k
+	@bash -c '\
+	  trap "echo ''Cleaning up ssh-agent...''; ssh-agent -k > /dev/null" EXIT; \
+	  eval `ssh-agent -s`; \
+	  terraform -chdir=terraform output -raw private_key | ssh-add -; \
+	  cd ansible && ansible-playbook -i inventory.yml playbook.yml --extra-vars "$(ANSIBLE_VARS)" --extra-vars "secrets_context=$(SECRETS_CONTEXT)"; \
+	'
 
 destroy:
 	@echo "Destroying infrastructure for environment '$(ENV)'..."
@@ -34,9 +36,11 @@ destroy:
 ssh:
 	@echo "Connecting to manager-1 in environment '$(ENV)'..."
 	@cd terraform && terraform init -backend-config="key=env/$(ENV)/terraform.tfstate"
-	@eval `ssh-agent -s`; \
-	terraform -chdir=terraform output -raw private_key | ssh-add -; \
-	MANAGER_IP=$$(terraform -chdir=terraform output -raw main_public_ip); \
-	ssh root@$$MANAGER_IP; \
-	ssh-agent -k
+	@bash -c '\
+	  trap "echo ''Cleaning up ssh-agent...''; ssh-agent -k > /dev/null" EXIT; \
+	  eval `ssh-agent -s`; \
+	  terraform -chdir=terraform output -raw private_key | ssh-add -; \
+	  MANAGER_IP=$$(terraform -chdir=terraform output -raw main_public_ip); \
+	  ssh root@$$MANAGER_IP; \
+	'
 
