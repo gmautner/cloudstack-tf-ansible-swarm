@@ -31,5 +31,5 @@ ssh:
 	@echo "Connecting to manager-1 in environment '$(ENV)'..."
 	@CLUSTER_NAME=$$(cd terraform && terraform output -raw cluster_name) && \
 	MANAGER_IP=$$(cd terraform && terraform output -raw manager_ips | head -n 1) && \
-	ssh -i ~/.ssh/$$CLUSTER_NAME debian@$$MANAGER_IP
+	ssh -i ~/.ssh/$$CLUSTER_NAME root@$$MANAGER_IP
 
