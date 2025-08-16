@@ -1,8 +1,8 @@
 SHELL := /bin/bash
 
 ENV ?= dev
-TF_VARS_FILE := ../../environments/$(ENV)/terraform.tfvars
-ANSIBLE_VARS := secrets_file=../../environments/$(ENV)/secrets.yaml stacks_dir=../../environments/$(ENV)/stacks
+TF_VARS_FILE := ../environments/$(ENV)/terraform.tfvars
+ANSIBLE_VARS := secrets_file=../environments/$(ENV)/secrets.yaml stacks_dir=../environments/$(ENV)/stacks
 
 .PHONY: help deploy destroy ssh
 
