@@ -23,8 +23,7 @@ resource "cloudstack_ipaddress" "public_ips" {
 
 # Create SSH keypair
 resource "cloudstack_ssh_keypair" "main" {
-  name       = "${var.cluster_name}-keypair"
-  public_key = var.ssh_public_key
+  name = "${var.cluster_name}-${var.env}"
 }
 
 # Create a flattened list of all ports across all public IPs for dependency tracking

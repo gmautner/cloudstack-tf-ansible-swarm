@@ -16,11 +16,6 @@ variable "disk_offering_name" {
   default     = "data.disk.general"
 }
 
-variable "ssh_public_key" {
-  description = "SSH public key to add to instances"
-  type        = string
-}
-
 variable "allowed_ssh_cidr_blocks" {
   description = "CIDR blocks allowed to access SSH ports (22001-22100)"
   type        = list(string)
@@ -29,6 +24,11 @@ variable "allowed_ssh_cidr_blocks" {
 
 variable "cluster_name" {
   description = "Name of the cluster"
+  type        = string
+}
+
+variable "env" {
+  description = "The deployment environment name (e.g., dev, prod)"
   type        = string
 }
 

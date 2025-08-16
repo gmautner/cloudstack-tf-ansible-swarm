@@ -19,17 +19,24 @@ help:
 
 deploy:
 	@echo "Deploying infrastructure for environment '$(ENV)'..."
-	cd terraform && terraform init -backend-config="key=env/$(ENV)/terraform.tfstate" && terraform apply -var-file=$(TF_VARS_FILE) -auto-approve
+	cd terraform && terraform init -backend-config="key=env/$(ENV)/terraform.tfstate" && terraform apply -var-file=$(TF_VARS_FILE) -var="env=$(ENV)" -auto-approve
 	@echo "Deploying Docker Swarm and stacks for environment '$(ENV)'..."
-	cd ansible && ansible-playbook -i inventory.yml playbook.yml --extra-vars "$(ANSIBLE_VARS)" --extra-vars "secrets_context=$(SECRETS_CONTEXT)"
+	@cd terraform && terraform init -backend-config="key=env/$(ENV)/terraform.tfstate"
+	@eval `ssh-agent -s`; \
+	terraform -chdir=terraform output -raw private_key | ssh-add -; \
+	cd ansible && ansible-playbook -i inventory.yml playbook.yml --extra-vars "$(ANSIBLE_VARS)" --extra-vars "secrets_context=$(SECRETS_CONTEXT)"; \
+	ssh-agent -k
 
 destroy:
 	@echo "Destroying infrastructure for environment '$(ENV)'..."
-	cd terraform && terraform init -backend-config="key=env/$(ENV)/terraform.tfstate" && terraform destroy -var-file=$(TF_VARS_FILE) -auto-approve
+	cd terraform && terraform init -backend-config="key=env/$(ENV)/terraform.tfstate" && terraform destroy -var-file=$(TF_VARS_FILE) -var="env=$(ENV)" -auto-approve
 
 ssh:
 	@echo "Connecting to manager-1 in environment '$(ENV)'..."
-	@CLUSTER_NAME=$$(cd terraform && terraform output -raw cluster_name) && \
-	MANAGER_IP=$$(cd terraform && terraform output -raw manager_ips | head -n 1) && \
-	ssh -i ~/.ssh/$$CLUSTER_NAME root@$$MANAGER_IP
+	@cd terraform && terraform init -backend-config="key=env/$(ENV)/terraform.tfstate"
+	@eval `ssh-agent -s`; \
+	terraform -chdir=terraform output -raw private_key | ssh-add -; \
+	MANAGER_IP=$$(terraform -chdir=terraform output -raw main_public_ip); \
+	ssh root@$$MANAGER_IP; \
+	ssh-agent -k
 

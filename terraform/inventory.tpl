@@ -1,7 +1,6 @@
 all:
   vars:
     ansible_user: root
-    ansible_ssh_private_key_file: "~/.ssh/${cluster_name}"
     ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
     public_ip: ${public_ip}
     domain_suffix: ${domain_suffix}

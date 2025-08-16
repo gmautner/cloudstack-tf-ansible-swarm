@@ -49,6 +49,12 @@ output "snapshot_schedules" {
   }
 }
 
+output "private_key" {
+  description = "Private key for SSH access to the instances"
+  value       = cloudstack_ssh_keypair.main.private_key
+  sensitive   = true
+}
+
 # Generate Ansible inventory file
 resource "local_file" "ansible_inventory" {
   content = templatefile("${path.module}/inventory.tpl", {
