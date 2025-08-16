@@ -27,18 +27,11 @@ workers = {
   },
   "mysql" = {
     plan         = "large",
-    data_size_gb = 90,
-    labels = {
-      "type"        = "database"
-      "db_category" = "mysql"
-    }
+    data_size_gb = 90
   },
-  "dockprom" = {
+  "monitoring" = {
     plan         = "large",
-    data_size_gb = 100,
-    labels = {
-      "system" = "monitoring"
-    }
+    data_size_gb = 100
   },
   "shared-1" = {
     plan         = "micro",
