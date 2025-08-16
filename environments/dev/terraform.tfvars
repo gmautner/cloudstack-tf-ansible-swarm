@@ -2,10 +2,10 @@
 ssh_public_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIN1TWAOpobnTgLV0qKPQbI48udaxSH3iYJroJmXlRu4c gmautner@Gilbertos-MacBook-Air.local"
 
 # Cluster name
-cluster_name = "cluster-1-dev"
+cluster_name = "cluster-2-dev"
 
 # Opcional: Sufixo de domínio para o cluster
-domain_suffix = "cluster-1-dev.giba.tech"
+domain_suffix = "cluster-2-dev.giba.tech"
 
 # Opcional: Restringir acesso SSH (default: ["0.0.0.0/0"])
 # allowed_ssh_cidr_blocks = ["203.0.113.0/24", "198.51.100.0/24"]
