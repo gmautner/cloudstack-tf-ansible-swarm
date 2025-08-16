@@ -74,40 +74,6 @@ public_ips = {
       }
     ]
   }
-  dockprom = {
-    ports = [
-      {
-        public        = 3000
-        private       = 3000
-        protocol      = "tcp"
-        allowed_cidrs = ["0.0.0.0/0"]
-      },
-      {
-        public        = 8080
-        private       = 8080
-        protocol      = "tcp"
-        allowed_cidrs = ["0.0.0.0/0"]
-      },
-      {
-        public        = 9090
-        private       = 9090
-        protocol      = "tcp"
-        allowed_cidrs = ["0.0.0.0/0"]
-      },
-      {
-        public        = 9093
-        private       = 9093
-        protocol      = "tcp"
-        allowed_cidrs = ["0.0.0.0/0"]
-      },
-      {
-        public        = 9091
-        private       = 9091
-        protocol      = "tcp"
-        allowed_cidrs = ["0.0.0.0/0"]
-      }
-    ]
-  },
   portainer = {
     ports = [
       {
