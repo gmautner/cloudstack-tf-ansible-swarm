@@ -18,29 +18,31 @@ help:
 	@echo "  ssh      - SSH into the first manager node."
 
 deploy:
-	@echo "Deploying infrastructure for environment '$(ENV)'..."
-	cd terraform && terraform init -backend-config="key=env/$(ENV)/terraform.tfstate" && terraform apply -var-file=$(TF_VARS_FILE) -var="env=$(ENV)" -auto-approve
-	@echo "Deploying Docker Swarm and stacks for environment '$(ENV)'..."
-	@cd terraform && terraform init -backend-config="key=env/$(ENV)/terraform.tfstate"
-	@bash -c '\
-	  trap "echo ''Cleaning up ssh-agent...''; ssh-agent -k > /dev/null" EXIT; \
-	  eval `ssh-agent -s`; \
-	  terraform -chdir=terraform output -raw private_key | ssh-add -; \
-	  cd ansible && ansible-playbook -i inventory.yml playbook.yml --extra-vars "$(ANSIBLE_VARS)" --extra-vars "secrets_context=$(SECRETS_CONTEXT)"; \
-	'
+	@echo "Initializing and applying Terraform for '$(ENV)'..."
+	@cd terraform && terraform init -backend-config="key=env/$(ENV)/terraform.tfstate" && terraform apply -var-file=$(TF_VARS_FILE) -var="env=$(ENV)" -auto-approve
+	@echo "Starting ssh-agent and running playbook for '$(ENV)'..."
+	@eval `ssh-agent -s` > /dev/null; \
+	trap 'echo "Killing ssh-agent..."; ssh-agent -k > /dev/null' EXIT; \
+	echo "Adding key to agent..."; \
+	terraform -chdir=terraform output -raw private_key | ssh-add - > /dev/null && \
+	echo "Running Ansible playbook..." && \
+	cd ansible && ansible-playbook -i inventory.yml playbook.yml --extra-vars "$(ANSIBLE_VARS)" --extra-vars "secrets_context=$(SECRETS_CONTEXT)";
+	@echo "Playbook finished."
 
 destroy:
-	@echo "Destroying infrastructure for environment '$(ENV)'..."
-	cd terraform && terraform init -backend-config="key=env/$(ENV)/terraform.tfstate" && terraform destroy -var-file=$(TF_VARS_FILE) -var="env=$(ENV)" -auto-approve
+	@echo "Initializing and destroying infrastructure for '$(ENV)'..."
+	@cd terraform && terraform init -backend-config="key=env/$(ENV)/terraform.tfstate" && terraform destroy -var-file=$(TF_VARS_FILE) -var="env=$(ENV)" -auto-approve
 
 ssh:
-	@echo "Connecting to manager-1 in environment '$(ENV)'..."
+	@echo "Initializing Terraform for '$(ENV)'..."
 	@cd terraform && terraform init -backend-config="key=env/$(ENV)/terraform.tfstate"
-	@bash -c '\
-	  trap "echo ''Cleaning up ssh-agent...''; ssh-agent -k > /dev/null" EXIT; \
-	  eval `ssh-agent -s`; \
-	  terraform -chdir=terraform output -raw private_key | ssh-add -; \
-	  MANAGER_IP=$$(terraform -chdir=terraform output -raw main_public_ip); \
-	  ssh root@$$MANAGER_IP; \
-	'
+	@echo "Starting ssh-agent and connecting to manager-1 in '$(ENV)'..."
+	@eval `ssh-agent -s` > /dev/null; \
+	trap 'echo "Killing ssh-agent..."; ssh-agent -k > /dev/null' EXIT; \
+	echo "Adding key to agent..."; \
+	terraform -chdir=terraform output -raw private_key | ssh-add - > /dev/null && \
+	MANAGER_IP=$$(terraform -chdir=terraform output -raw main_public_ip); \
+	echo "Connecting to $$MANAGER_IP..."; \
+	ssh root@$$MANAGER_IP;
+	@echo "SSH session closed."
 
