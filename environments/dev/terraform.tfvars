@@ -2,7 +2,7 @@
 cluster_name = "cluster-2-dev"
 
 # Opcional: Sufixo de domínio para o cluster
-domain_suffix = "cluster-2-dev.giba.tech"
+domain_suffix = "dev.cluster-2.giba.tech"
 
 # Opcional: Restringir acesso SSH (default: ["0.0.0.0/0"])
 # allowed_ssh_cidr_blocks = ["203.0.113.0/24", "198.51.100.0/24"]
