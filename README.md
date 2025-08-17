@@ -95,6 +95,14 @@ This template comes with a `dev` and `prod` environment. Let's configure `dev`.
       export WORDPRESS_DB_PASSWORD="your-dev-db-password"
       ```
 
+      For private container registries, you can also optionally provide your credentials:
+
+      ```bash
+      export DOCKER_REGISTRY_URL="your-registry-url"
+      export DOCKER_REGISTRY_USERNAME="your-username"
+      export DOCKER_REGISTRY_PASSWORD="your-password-or-token"
+      ```
+
     - **In CI/CD**: Add them to your GitHub repository secrets.
 
 ### 4. Deploy
@@ -127,6 +135,7 @@ The pipeline will deploy the selected environment using the secrets you've confi
 - Any application secrets defined in `ansible/secrets/secrets.yaml` (e.g., `MYSQL_ROOT_PASSWORD`, `WORDPRESS_DB_PASSWORD`).
 - `DOCKER_REGISTRY_URL` (optional)
 - `DOCKER_REGISTRY_USERNAME` (optional)
+- `DOCKER_REGISTRY_PASSWORD` (optional)
 
 ## Makefile Commands
 
