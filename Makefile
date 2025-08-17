@@ -19,9 +19,9 @@ help:
 
 deploy:
 	@echo "Initializing and applying Terraform for '$(ENV)'..."
-	@cd terraform && terraform init -backend-config="key=env/$(ENV)/terraform.tfstate" && terraform apply -var-file=$(TF_VARS_FILE) -var="env=$(ENV)" -auto-approve
+	cd terraform && terraform init -backend-config="key=env/$(ENV)/terraform.tfstate" && terraform apply -var-file=$(TF_VARS_FILE) -var="env=$(ENV)" -auto-approve
 	@echo "Starting ssh-agent and running playbook for '$(ENV)'..."
-	@eval `ssh-agent -s` > /dev/null; \
+	eval `ssh-agent -s` > /dev/null; \
 	trap 'echo "Killing ssh-agent..."; ssh-agent -k > /dev/null' EXIT; \
 	echo "Adding key to agent..."; \
 	terraform -chdir=terraform output -raw private_key | ssh-add - > /dev/null && \
@@ -31,13 +31,13 @@ deploy:
 
 destroy:
 	@echo "Initializing and destroying infrastructure for '$(ENV)'..."
-	@cd terraform && terraform init -backend-config="key=env/$(ENV)/terraform.tfstate" && terraform destroy -var-file=$(TF_VARS_FILE) -var="env=$(ENV)" -auto-approve
+	cd terraform && terraform init -backend-config="key=env/$(ENV)/terraform.tfstate" && terraform destroy -var-file=$(TF_VARS_FILE) -var="env=$(ENV)" -auto-approve
 
 ssh:
 	@echo "Initializing Terraform for '$(ENV)'..."
-	@cd terraform && terraform init -backend-config="key=env/$(ENV)/terraform.tfstate"
+	cd terraform && terraform init -backend-config="key=env/$(ENV)/terraform.tfstate"
 	@echo "Starting ssh-agent and connecting to manager-1 in '$(ENV)'..."
-	@eval `ssh-agent -s` > /dev/null; \
+	eval `ssh-agent -s` > /dev/null; \
 	trap 'echo "Killing ssh-agent..."; ssh-agent -k > /dev/null' EXIT; \
 	echo "Adding key to agent..."; \
 	terraform -chdir=terraform output -raw private_key | ssh-add - > /dev/null && \
