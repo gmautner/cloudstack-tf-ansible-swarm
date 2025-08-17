@@ -328,6 +328,7 @@
         recurse: true
       register: compose_templates_local
       delegate_to: localhost
+      become: false
 
     # Render templates, stripping the .j2 extension from the destination filename
     - name: Render docker-compose templates from controller to remote
