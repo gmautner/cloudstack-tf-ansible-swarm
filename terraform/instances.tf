@@ -34,6 +34,7 @@ resource "cloudstack_instance" "managers" {
     name         = "manager-${count.index + 1}"
     cluster_name = var.cluster_name
     cluster_id   = local.cluster_id
+    env          = var.env
   }
 }
 
@@ -68,6 +69,7 @@ resource "cloudstack_instance" "workers" {
     name         = each.key
     cluster_name = var.cluster_name
     cluster_id   = local.cluster_id
+    env          = var.env
   }
 }
 
