@@ -92,6 +92,7 @@ This template comes with a `dev` and `prod` environment. Let's configure `dev`.
       export AWS_ACCESS_KEY_ID="..."
       export AWS_SECRET_ACCESS_KEY="..."
       export MYSQL_ROOT_PASSWORD="your-dev-db-password"
+      export WORDPRESS_DB_PASSWORD="your-dev-db-password"
       ```
 
     - **In CI/CD**: Add them to your GitHub repository secrets.
