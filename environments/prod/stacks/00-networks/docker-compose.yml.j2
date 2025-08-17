@@ -1,14 +1,9 @@
 version: '3.8'
 
-services:
-  # This is a dummy service that does nothing. Its sole purpose is to
-  # ensure that the docker stack deploy command processes this file and
-  # creates the networks defined below. Docker Swarm does not create
-  # networks from a compose file unless at least one service is defined.
-  network-creator:
-    image: alpine:3.18
-    deploy:
-      replicas: 0
+# This file only defines shared overlay networks. The empty 'services' key
+# is a workaround to ensure that 'docker stack deploy' processes the file
+# and creates the networks, as it would otherwise do nothing.
+services: {}
 
 networks:
   traefik_network:
