@@ -1,6 +1,3 @@
-# SSH public key for instance access
-ssh_public_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIN1TWAOpobnTgLV0qKPQbI48udaxSH3iYJroJmXlRu4c gmautner@Gilbertos-MacBook-Air.local"
-
 # Cluster name
 cluster_name = "cluster-2-prod"
 

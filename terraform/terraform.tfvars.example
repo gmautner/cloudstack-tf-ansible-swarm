@@ -1,6 +1,3 @@
-# Chave pública SSH para acesso às instâncias
-ssh_public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC... sua-chave-publica-aqui"
-
 # Nome do cluster
 cluster_name = "cluster-1"
 
