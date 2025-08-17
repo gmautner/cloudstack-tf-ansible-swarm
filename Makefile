@@ -44,5 +44,5 @@ ssh:
 	terraform -chdir=terraform output -raw private_key | ssh-add - > /dev/null && \
 	MANAGER_IP=$$(terraform -chdir=terraform output -raw main_public_ip); \
 	echo "Connecting to $$MANAGER_IP..."; \
-	ssh root@$$MANAGER_IP;
+	ssh -o StrictHostKeyChecking=no -p 22001 root@$$MANAGER_IP;
 	@echo "SSH session closed."
