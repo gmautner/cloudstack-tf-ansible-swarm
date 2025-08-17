@@ -1,10 +1,10 @@
 # Create isolated network
 resource "cloudstack_network" "main" {
-  name             = "${var.cluster_name}-network"
+  name             = local.cluster_id
   cidr             = "192.168.1.0/24"
   network_offering = data.cloudstack_network_offering.main.id
   zone             = data.cloudstack_zone.main.name
-  display_text     = "Docker Swarm Network for ${var.cluster_name}"
+  display_text     = "Docker Swarm Network for ${local.cluster_id}"
 }
 
 # Main public IP for SSH access and management
