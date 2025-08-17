@@ -26,3 +26,5 @@ Thumbs.db
 
 # Environment files
 .env
+
+environments/*/inventory.yml

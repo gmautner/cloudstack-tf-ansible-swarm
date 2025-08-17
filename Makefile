@@ -3,6 +3,7 @@ SHELL := /bin/bash
 ENV ?= dev
 TF_VARS_FILE := ../environments/$(ENV)/terraform.tfvars
 ANSIBLE_VARS := secrets_file=../environments/$(ENV)/secrets.yaml stacks_dir=../environments/$(ENV)/stacks
+ANSIBLE_INVENTORY := ../environments/$(ENV)/inventory.yml
 
 .PHONY: help deploy destroy ssh
 
@@ -26,7 +27,7 @@ deploy:
 	echo "Adding key to agent..."; \
 	terraform -chdir=terraform output -raw private_key | ssh-add - > /dev/null && \
 	echo "Running Ansible playbook..." && \
-	cd ansible && ansible-playbook -i inventory.yml playbook.yml --extra-vars "$(ANSIBLE_VARS)" --extra-vars "secrets_context=$(SECRETS_CONTEXT)";
+	cd ansible && ansible-playbook -i $(ANSIBLE_INVENTORY) playbook.yml --extra-vars "$(ANSIBLE_VARS)" --extra-vars "secrets_context=$(SECRETS_CONTEXT)";
 	@echo "Playbook finished."
 
 destroy:
@@ -45,4 +46,3 @@ ssh:
 	echo "Connecting to $$MANAGER_IP..."; \
 	ssh root@$$MANAGER_IP;
 	@echo "SSH session closed."
-
