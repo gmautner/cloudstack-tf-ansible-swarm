@@ -6,7 +6,7 @@ ANSIBLE_VARS := secrets_file=../environments/$(ENV)/secrets.yaml stacks_dir=../e
 ANSIBLE_INVENTORY := ../environments/$(ENV)/inventory.yml
 PORT ?= 22001
 
-.PHONY: help deploy destroy ssh
+.PHONY: help deploy destroy ssh plan
 
 help:
 	@echo "Usage: make [target] [ENV=environment_name]"
@@ -18,6 +18,7 @@ help:
 	@echo "Targets:"
 	@echo "  deploy   - Deploy the CloudStack infrastructure and Docker Swarm stacks."
 	@echo "  destroy  - Destroy the CloudStack infrastructure."
+	@echo "  plan     - Show the Terraform execution plan."
 	@echo "  ssh      - SSH into the first manager node."
 
 deploy:
@@ -48,3 +49,7 @@ ssh:
 	echo "Connecting to $$MANAGER_IP..."; \
 	ssh -o StrictHostKeyChecking=no -p $(PORT) root@$$MANAGER_IP;
 	@echo "SSH session closed."
+
+plan:
+	@echo "Initializing and planning Terraform for '$(ENV)'..."
+	cd terraform && terraform init -backend-config="key=env/$(ENV)/terraform.tfstate" && terraform plan -var-file=$(TF_VARS_FILE) -var="env=$(ENV)"

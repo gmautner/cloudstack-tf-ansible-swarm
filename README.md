@@ -140,5 +140,6 @@ The pipeline will deploy the selected environment using the secrets you've confi
 ## Makefile Commands
 
 - `make deploy ENV=prod`: Deploy the `prod` environment.
+- `make plan ENV=prod`: Show the Terraform execution plan for the `prod` environment.
 - `make destroy ENV=prod`: Destroy the `prod` environment.
 - `make ssh ENV=prod`: SSH into the first manager of the `prod` environment.
