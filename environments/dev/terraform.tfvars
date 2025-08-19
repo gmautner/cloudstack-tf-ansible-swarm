@@ -51,6 +51,19 @@ workers = {
       "pool" = "shared"
     }
   },
+  # Workers for nextcloud-postgres-redis
+  "nextcloud" = {
+    plan         = "micro",
+    data_size_gb = 20,
+  },
+  "postgres" = {
+    plan         = "micro",
+    data_size_gb = 20
+  },
+  "redis" = {
+    plan         = "micro",
+    data_size_gb = 10
+  },
 }
 
 # Public IPs and load balancer configuration
