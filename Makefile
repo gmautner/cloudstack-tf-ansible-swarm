@@ -4,6 +4,7 @@ ENV ?= dev
 TF_VARS_FILE := ../environments/$(ENV)/terraform.tfvars
 ANSIBLE_VARS := secrets_file=../environments/$(ENV)/secrets.yaml stacks_dir=../environments/$(ENV)/stacks
 ANSIBLE_INVENTORY := ../environments/$(ENV)/inventory.yml
+PORT ?= 22001
 
 .PHONY: help deploy destroy ssh
 
@@ -12,6 +13,7 @@ help:
 	@echo ""
 	@echo "Arguments:"
 	@echo "  ENV      - The environment to target (e.g., dev, prod). Defaults to 'dev'."
+	@echo "  PORT     - SSH port to connecto to (default: 22001)"
 	@echo ""
 	@echo "Targets:"
 	@echo "  deploy   - Deploy the CloudStack infrastructure and Docker Swarm stacks."
@@ -22,7 +24,7 @@ deploy:
 	@echo "Initializing and applying Terraform for '$(ENV)'..."
 	cd terraform && terraform init -backend-config="key=env/$(ENV)/terraform.tfstate" && terraform apply -var-file=$(TF_VARS_FILE) -var="env=$(ENV)" -auto-approve
 	@echo "Starting ssh-agent and running playbook for '$(ENV)'..."
-	eval `ssh-agent -s` > /dev/null; \
+	@eval `ssh-agent -s` > /dev/null; \
 	trap 'echo "Killing ssh-agent..."; ssh-agent -k > /dev/null' EXIT; \
 	echo "Adding key to agent..."; \
 	terraform -chdir=terraform output -raw private_key | ssh-add - > /dev/null && \
@@ -38,11 +40,11 @@ ssh:
 	@echo "Initializing Terraform for '$(ENV)'..."
 	cd terraform && terraform init -backend-config="key=env/$(ENV)/terraform.tfstate"
 	@echo "Starting ssh-agent and connecting to manager-1 in '$(ENV)'..."
-	eval `ssh-agent -s` > /dev/null; \
+	@eval `ssh-agent -s` > /dev/null; \
 	trap 'echo "Killing ssh-agent..."; ssh-agent -k > /dev/null' EXIT; \
 	echo "Adding key to agent..."; \
 	terraform -chdir=terraform output -raw private_key | ssh-add - > /dev/null && \
 	MANAGER_IP=$$(terraform -chdir=terraform output -raw main_public_ip); \
 	echo "Connecting to $$MANAGER_IP..."; \
-	ssh -o StrictHostKeyChecking=no -p 22001 root@$$MANAGER_IP;
+	ssh -o StrictHostKeyChecking=no -p $(PORT) root@$$MANAGER_IP;
 	@echo "SSH session closed."
