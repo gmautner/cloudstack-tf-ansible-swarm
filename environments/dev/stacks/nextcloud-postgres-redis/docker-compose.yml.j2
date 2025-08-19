@@ -35,12 +35,6 @@ services:
 
   nextcloud:
     image: nextcloud:31.0
-      labels:
-        - traefik.enable=true
-        - traefik.http.routers.nextcloud.rule=Host(`nextcloud.${DOMAIN_SUFFIX}`)
-        - traefik.http.routers.nextcloud.entrypoints=websecure
-        - traefik.http.routers.nextcloud.tls.certresolver=letsencrypt
-        - traefik.http.services.nextcloud.loadbalancer.server.port=80
     volumes:
       - nextcloud:/var/www/html
     environment:
@@ -54,6 +48,17 @@ services:
     networks:
       - nextcloud_network
       - traefik_network
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.hostname == nextcloud
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.nextcloud.rule=Host(`nextcloud.${DOMAIN_SUFFIX}`)
+        - traefik.http.routers.nextcloud.entrypoints=websecure
+        - traefik.http.routers.nextcloud.tls.certresolver=letsencrypt
+        - traefik.http.services.nextcloud.loadbalancer.server.port=80
 
 volumes:
   nextcloud:
