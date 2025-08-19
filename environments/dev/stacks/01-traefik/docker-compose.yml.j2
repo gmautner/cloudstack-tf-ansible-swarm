@@ -1,5 +1,13 @@
 version: '3.8'
 
+networks:
+  traefik_network:
+    name: traefik_network
+    driver: overlay
+  monitor-net:
+    name: monitor-net
+    driver: overlay
+
 services:
   traefik:
     image: traefik:v3.0
@@ -53,12 +61,6 @@ services:
 
 volumes:
   letsencrypt_data:
-
-networks:
-  traefik_network:
-    external: true
-  monitor-net:
-    external: true
 
 secrets:
   traefik_basicauth:

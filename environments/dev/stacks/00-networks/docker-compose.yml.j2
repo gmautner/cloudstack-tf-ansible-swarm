@@ -4,11 +4,3 @@ version: '3.8'
 # is a workaround to ensure that 'docker stack deploy' processes the file
 # and creates the networks, as it would otherwise do nothing.
 services: {}
-
-networks:
-  traefik_network:
-    name: traefik_network
-    driver: overlay
-  monitor-net:
-    name: monitor-net
-    driver: overlay
