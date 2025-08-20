@@ -1,0 +1,103 @@
+version: '3.8'
+
+networks:
+  rocketchat_network:
+    driver: overlay
+  traefik_network:
+    external: true
+
+services:
+  mongo1:
+    image: mongo:7.0
+    command: ["--replSet", "rs0", "--bind_ip_all", "--keyFile", "/run/secrets/mongodb_key_string"]
+    volumes:
+      - mongo1_data:/data/db
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=rocketchat
+      - MONGO_INITDB_ROOT_PASSWORD_FILE=/run/secrets/mongodb_password
+    secrets:
+      - source: mongodb_password
+        target: mongodb_password
+        uid: "999"
+        gid: "999"
+        mode: 0400
+      - source: mongodb_key_string
+        target: mongodb_key_string
+        uid: "999"
+        gid: "999"
+        mode: 0400
+    networks:
+      - rocketchat_network
+      - traefik_network
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.hostname == mongo1
+
+  mongo2:
+    image: mongo:7.0
+    command: ["--replSet", "rs0", "--bind_ip_all", "--keyFile", "/run/secrets/mongodb_key_string"]
+    volumes:
+      - mongo2_data:/data/db
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=rocketchat
+      - MONGO_INITDB_ROOT_PASSWORD_FILE=/run/secrets/mongodb_password
+    secrets:
+      - source: mongodb_password
+        target: mongodb_password
+        uid: "999"
+        gid: "999"
+        mode: 0400
+      - source: mongodb_key_string
+        target: mongodb_key_string
+        uid: "999"
+        gid: "999"
+        mode: 0400
+    networks:
+      - rocketchat_network
+      - traefik_network
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.hostname == mongo2
+
+  mongo3:
+    image: mongo:7.0
+    command: ["--replSet", "rs0", "--bind_ip_all", "--keyFile", "/run/secrets/mongodb_key_string"]
+    volumes:
+      - mongo3_data:/data/db
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=rocketchat
+      - MONGO_INITDB_ROOT_PASSWORD_FILE=/run/secrets/mongodb_password
+    secrets:
+      - source: mongodb_password
+        target: mongodb_password
+        uid: "999"
+        gid: "999"
+        mode: 0400
+      - source: mongodb_key_string
+        target: mongodb_key_string
+        uid: "999"
+        gid: "999"
+        mode: 0400
+    networks:
+      - rocketchat_network
+      - traefik_network
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.hostname == mongo3
+
+volumes:
+  mongo1_data:
+  mongo2_data:
+  mongo3_data:
+
+secrets:
+  mongodb_password:
+    external: true
+  mongodb_key_string:
+    external: true

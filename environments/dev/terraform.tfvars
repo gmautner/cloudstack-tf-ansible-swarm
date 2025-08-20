@@ -64,6 +64,19 @@ workers = {
     plan         = "micro",
     data_size_gb = 10
   },
+  # Workers for rocketchat-mongodb
+  "mongo1" = {
+    plan         = "small",
+    data_size_gb = 40
+  },
+  "mongo2" = {
+    plan         = "small",
+    data_size_gb = 40
+  },
+  "mongo3" = {
+    plan         = "small",
+    data_size_gb = 40
+  }
 }
 
 # Public IPs and load balancer configuration
