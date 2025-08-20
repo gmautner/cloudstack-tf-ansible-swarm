@@ -88,5 +88,5 @@ The secrets workflow is designed to be both secure and CI/CD-friendly.
 The GitHub Actions workflow (`.github/workflows/deploy.yml`) is the final piece of the automation.
 
 -   **Manual Trigger**: It uses `workflow_dispatch` to allow users to trigger a deployment manually from the GitHub UI.
--   **Environment Selection**: It provides a dropdown menu to select the target environment (`dev` or `prod`).
--   **Orchestration**: The workflow's primary job is to provide the secrets and call the `Makefile`, passing in the chosen environment. All complex logic remains in the `Makefile`, keeping the CI pipeline definition clean and simple.
+-   **Environment Selection**: It prompts the user for a text input to specify the target environment. This name must correspond to a configured GitHub Environment and a matching directory in `environments/`.
+-   **Orchestration**: The workflow's primary job is to provide the secrets from the selected GitHub Environment and call the `Makefile`, passing in the chosen environment name. All complex logic remains in the `Makefile`, keeping the CI pipeline definition clean and simple.

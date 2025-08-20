@@ -121,21 +121,31 @@ This command will automatically use the correct S3 state file path and configura
 
 ## CI/CD with GitHub Actions
 
-- Go to the **Actions** tab in your GitHub repository.
-- Select the **Deploy Infrastructure** workflow.
-- Click **Run workflow**, choose the environment (`dev` or `prod`), and click **Run workflow**.
+This project uses GitHub Actions to automate deployments. The workflow is configured to use **GitHub Environments**, which allows you to define distinct sets of secrets for each of your environments (e.g., `dev`, `prod`).
 
-The pipeline will deploy the selected environment using the secrets you've configured in your repository's **Settings > Secrets and variables > Actions**. For every `env_var` in your environment's `secrets.yaml`, you must create a corresponding secret in GitHub. You must also provide your `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` as secrets.
+### Configuration
 
-**Required GitHub Secrets:**
+1.  **Create Environments**: In your GitHub repository, go to **Settings > Environments**. Create an environment for each of your deployment targets (e.g., `dev`, `prod`). The names must match the directory names under `environments/`.
+2.  **Add Secrets**: For each environment you create, add the required secrets. These include your CloudStack and S3 credentials, as well as any application-specific secrets defined in your `secrets.yaml` file.
 
-- `CLOUDSTACK_API_URL`
-- `CLOUDSTACK_API_KEY`
-- `CLOUDSTACK_SECRET_KEY`
-- Any application secrets defined in `ansible/secrets/secrets.yaml` (e.g., `MYSQL_ROOT_PASSWORD`, `WORDPRESS_DB_PASSWORD`).
-- `DOCKER_REGISTRY_URL` (optional)
-- `DOCKER_REGISTRY_USERNAME` (optional)
-- `DOCKER_REGISTRY_PASSWORD` (optional)
+    **Required Environment Secrets:**
+    -   `CLOUDSTACK_API_URL`
+    -   `CLOUDSTACK_API_KEY`
+    -   `CLOUDSTACK_SECRET_KEY`
+    -   `AWS_ACCESS_KEY_ID`
+    -   `AWS_SECRET_ACCESS_KEY`
+    -   Any application secrets (e.g., `MYSQL_ROOT_PASSWORD`).
+    -   `DOCKER_REGISTRY_URL` (optional)
+    -   `DOCKER_REGISTRY_USERNAME` (optional)
+    -   `DOCKER_REGISTRY_PASSWORD` (optional)
+
+### Running the Workflow
+
+1.  Go to the **Actions** tab in your GitHub repository.
+2.  Select the **Deploy Infrastructure** or **Destroy Infrastructure** workflow.
+3.  Click **Run workflow**, enter the name of the environment you wish to target, and click **Run workflow**.
+
+The pipeline will deploy the selected environment using the secrets you've configured for that specific GitHub Environment.
 
 ## Makefile Commands
 

@@ -88,5 +88,5 @@ O fluxo de trabalho de segredos é projetado para ser seguro e amigável para CI
 O workflow do GitHub Actions (`.github/workflows/deploy.yml`) é a peça final da automação.
 
 -   **Gatilho Manual**: Ele usa `workflow_dispatch` para permitir que os usuários acionem uma implantação manualmente a partir da interface do GitHub.
--   **Seleção de Ambiente**: Ele fornece um menu suspenso para selecionar o ambiente de destino (`dev` ou `prod`).
--   **Orquestração**: O trabalho principal do workflow é fornecer os segredos e chamar o `Makefile`, passando o ambiente escolhido. Toda a lógica complexa permanece no `Makefile`, mantendo a definição do pipeline de CI limpa e simples.
+-   **Seleção de Ambiente**: Ele solicita ao usuário uma entrada de texto para especificar o ambiente de destino. O nome deve corresponder a um Ambiente GitHub configurado e a um diretório correspondente em `environments/`.
+-   **Orquestração**: O trabalho principal do workflow é fornecer os segredos do Ambiente GitHub selecionado e chamar o `Makefile`, passando o nome do ambiente escolhido. Toda a lógica complexa permanece no `Makefile`, mantendo a definição do pipeline de CI limpa e simples.

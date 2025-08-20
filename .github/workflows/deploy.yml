@@ -4,17 +4,15 @@ on:
   workflow_dispatch:
     inputs:
       environment:
-        description: 'Environment to deploy'
+        description: 'Environment to deploy (e.g., dev, prod)'
         required: true
         default: 'dev'
-        type: choice
-        options:
-        - dev
-        - prod
+        type: string
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
