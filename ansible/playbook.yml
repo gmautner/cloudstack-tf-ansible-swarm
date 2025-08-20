@@ -38,9 +38,6 @@
       community.general.timezone:
         name: Etc/UTC
 
-    - name: Reconfigure tzdata
-      command: dpkg-reconfigure -f noninteractive tzdata
-
     - name: Update and upgrade packages
       apt:
         update_cache: true
