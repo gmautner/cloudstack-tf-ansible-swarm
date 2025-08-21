@@ -1,3 +1,13 @@
+# Rodar na interface do mongo1:
+# rs.initiate({
+#  _id: "rs0",
+#  members: [
+#    {_id: 0, host: "mongo1"},
+#    {_id: 1, host: "mongo2"},
+#    {_id: 2, host: "mongo3"}
+#  ]
+# })
+
 version: '3.8'
 
 networks:
@@ -7,6 +17,34 @@ networks:
     external: true
 
 services:
+  rocketchat:
+    image: registry.rocket.chat/rocketchat/rocket.chat
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        export MONGO_URL="mongodb://rocketchat:$$(cat /run/secrets/mongodb_password)@mongo1:27017,mongo2:27017,mongo3:27017/rocketchat?authSource=admin&replicaSet=rs0"
+        exec node main.js
+    environment:
+      ROOT_URL: https://rocketchat.${DOMAIN_SUFFIX}
+      PORT: 3000
+      DEPLOY_METHOD: docker
+    secrets:
+      - mongodb_password
+    networks:
+      - rocketchat_network
+      - traefik_network
+    deploy:
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.rocketchat.rule=Host(`rocketchat.${DOMAIN_SUFFIX}`)
+        - traefik.http.routers.rocketchat.entrypoints=websecure
+        - traefik.http.routers.rocketchat.tls.certresolver=letsencrypt
+        - traefik.http.services.rocketchat.loadbalancer.server.port=3000
+      replicas: 1
+      placement:
+        constraints:
+          - node.hostname == rocketchat
+
   mongo1:
     image: mongo:7.0
     command: ["--replSet", "rs0", "--bind_ip_all", "--keyFile", "/run/secrets/mongodb_key_string"]
@@ -28,7 +66,6 @@ services:
         mode: 0400
     networks:
       - rocketchat_network
-      - traefik_network
     deploy:
       replicas: 1
       placement:
@@ -56,7 +93,6 @@ services:
         mode: 0400
     networks:
       - rocketchat_network
-      - traefik_network
     deploy:
       replicas: 1
       placement:
@@ -84,7 +120,6 @@ services:
         mode: 0400
     networks:
       - rocketchat_network
-      - traefik_network
     deploy:
       replicas: 1
       placement:

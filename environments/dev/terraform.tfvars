@@ -51,6 +51,7 @@ workers = {
       "pool" = "shared"
     }
   },
+
   # Workers for nextcloud-postgres-redis
   "nextcloud" = {
     plan         = "micro",
@@ -64,7 +65,12 @@ workers = {
     plan         = "micro",
     data_size_gb = 10
   },
+
   # Workers for rocketchat-mongodb
+  "rocketchat" = {
+    plan         = "medium",
+    data_size_gb = 20
+  },
   "mongo1" = {
     plan         = "small",
     data_size_gb = 40
