@@ -8,7 +8,7 @@ domain_suffix = "dev.cluster-2.giba.tech"
 # allowed_ssh_cidr_blocks = ["203.0.113.0/24", "198.51.100.0/24"]
 
 # Opcional: Habilitar reinicializações automáticas após atualizações (default: false)
-# automatic_reboot = true
+automatic_reboot = true
 
 # Opcional: Horário UTC para reinicializações automáticas (default: "05:00")
 # automatic_reboot_time_utc = "05:00"
