@@ -63,8 +63,7 @@ resource "cloudstack_firewall" "ports" {
 # Firewall rules for SSH access (ports 22001-22100) - using the main public IP
 resource "cloudstack_firewall" "ssh" {
   depends_on = [
-    cloudstack_port_forward.manager_ssh,
-    cloudstack_port_forward.worker_ssh
+    cloudstack_port_forward.ssh,
   ]
 
   ip_address_id = cloudstack_ipaddress.main.id

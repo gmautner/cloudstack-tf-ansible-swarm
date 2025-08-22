@@ -66,14 +66,14 @@ resource "local_file" "ansible_inventory" {
     managers = [
       for i in range(var.manager_count) : {
         name       = cloudstack_instance.managers[i].name
-        port       = tolist(cloudstack_port_forward.manager_ssh[i].forward)[0].public_port
+        port       = local.all_ssh_forwards[cloudstack_instance.managers[i].id].public_port
         private_ip = cloudstack_instance.managers[i].ip_address
       }
     ]
     workers = [
       for worker_name in keys(var.workers) : {
         name       = cloudstack_instance.workers[worker_name].name
-        port       = tolist(cloudstack_port_forward.worker_ssh[worker_name].forward)[0].public_port
+        port       = local.all_ssh_forwards[cloudstack_instance.workers[worker_name].id].public_port
         private_ip = cloudstack_instance.workers[worker_name].ip_address
         labels     = var.workers[worker_name].labels
       }

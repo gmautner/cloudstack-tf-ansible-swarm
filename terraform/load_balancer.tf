@@ -17,32 +17,37 @@ resource "cloudstack_loadbalancer_rule" "ports" {
   member_ids    = [for worker in cloudstack_instance.workers : worker.id]
 }
 
-# Port forwarding rules for SSH access to managers (22001-22003)
-# Using the main public IP for SSH access (separate from service IPs)
-resource "cloudstack_port_forward" "manager_ssh" {
-  count = var.manager_count
-
-  ip_address_id = cloudstack_ipaddress.main.id
-
-  forward {
-    protocol           = "tcp"
-    public_port        = 22001 + count.index
-    private_port       = 22
-    virtual_machine_id = cloudstack_instance.managers[count.index].id
+# Create a map of all SSH port forwarding rules for managers and workers
+locals {
+  manager_forwards = {
+    for i in range(var.manager_count) :
+    cloudstack_instance.managers[i].id => {
+      public_port = 22001 + i
+    }
   }
+
+  worker_forwards = {
+    for i, name in keys(var.workers) :
+    cloudstack_instance.workers[name].id => {
+      public_port = 22004 + i
+    }
+  }
+
+  all_ssh_forwards = merge(local.manager_forwards, local.worker_forwards)
 }
 
-# Port forwarding rules for SSH access to workers (starting at 22004)
+# Port forwarding rules for SSH access to all managers and workers
 # Using the main public IP for SSH access (separate from service IPs)
-resource "cloudstack_port_forward" "worker_ssh" {
-  for_each = var.workers
-
+resource "cloudstack_port_forward" "ssh" {
   ip_address_id = cloudstack_ipaddress.main.id
 
-  forward {
-    protocol           = "tcp"
-    public_port        = 22004 + index(keys(var.workers), each.key)
-    private_port       = 22
-    virtual_machine_id = cloudstack_instance.workers[each.key].id
+  dynamic "forward" {
+    for_each = local.all_ssh_forwards
+    content {
+      protocol           = "tcp"
+      public_port        = forward.value.public_port
+      private_port       = 22
+      virtual_machine_id = forward.key
+    }
   }
 }
