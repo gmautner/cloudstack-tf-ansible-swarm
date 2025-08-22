@@ -82,6 +82,36 @@ workers = {
   "mongo3" = {
     plan         = "small",
     data_size_gb = 40
+  },
+
+  # Workers for kafka stack
+  "kafbat" = {
+    plan         = "micro",
+    data_size_gb = 10
+  },
+  "controller-1" = {
+    plan         = "small",
+    data_size_gb = 40
+  },
+  "controller-2" = {
+    plan         = "small",
+    data_size_gb = 40
+  },
+  "controller-3" = {
+    plan         = "small",
+    data_size_gb = 40
+  },
+  "broker-1" = {
+    plan         = "medium",
+    data_size_gb = 100
+  },
+  "broker-2" = {
+    plan         = "medium",
+    data_size_gb = 100
+  },
+  "broker-3" = {
+    plan         = "medium",
+    data_size_gb = 100
   }
 }
 
