@@ -182,7 +182,7 @@ For example, if the stack requires a MongoDB instance, add the following to the 
 ...
 ```
 
-If a pool label is used, add, for example, the following to the `terraform.tfvars` file:
+If a pool label is used, add, for example, the following to the `terraform.tfvars` file, matching the number of replicas required by the service to the number of nodes in the pool:
 
 ```hcl
 ...
