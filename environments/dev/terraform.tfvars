@@ -112,6 +112,12 @@ workers = {
   "broker-3" = {
     plan         = "medium",
     data_size_gb = 100
+  },
+
+  # Minio worker
+  "minio" = {
+    plan         = "small",
+    data_size_gb = 40
   }
 }
 
