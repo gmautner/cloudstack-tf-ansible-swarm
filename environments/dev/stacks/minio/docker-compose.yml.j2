@@ -3,6 +3,8 @@ version: "3.8"
 networks:
   minio_network:
     driver: overlay
+  traefik_network:
+    external: true
 
 services:
   minio:
@@ -11,8 +13,8 @@ services:
     environment:
       - MINIO_ROOT_USER=minioadmin
       - MINIO_ROOT_PASSWORD_FILE=/run/secrets/minio_root_password
-      - MINIO_SERVER_URL=https://minio.{{ DOMAIN_SUFFIX }}
-      - MINIO_BROWSER_REDIRECT_URL=https://minio-console.{{ DOMAIN_SUFFIX }}
+      - MINIO_SERVER_URL=https://minio.{{ domain_suffix }}
+      - MINIO_BROWSER_REDIRECT_URL=https://minio-console.{{ domain_suffix }}
     secrets:
       - minio_root_password
     volumes:
@@ -26,15 +28,17 @@ services:
         constraints:
           - node.hostname == minio
       labels:
-        - "traefik.enable=true"
-        - "traefik.http.routers.minio-api.rule=Host(`minio.{{ DOMAIN_SUFFIX }}`)"
-        - "traefik.http.routers.minio-api.entrypoints=websecure"
-        - "traefik.http.routers.minio-api.tls.certresolver=letsencrypt"
-        - "traefik.http.services.minio-api.loadbalancer.server.port=9000"
-        - "traefik.http.routers.minio-console.rule=Host(`minio-console.{{ DOMAIN_SUFFIX }}`)"
-        - "traefik.http.routers.minio-console.entrypoints=websecure"
-        - "traefik.http.routers.minio-console.tls.certresolver=letsencrypt"
-        - "traefik.http.services.minio-console.loadbalancer.server.port=9001"
+        - traefik.enable=true
+        - traefik.http.routers.minio.rule=Host(`minio.{{ domain_suffix }}`)
+        - traefik.http.routers.minio.entrypoints=websecure
+        - traefik.http.routers.minio.tls.certresolver=letsencrypt
+        - traefik.http.routers.minio.service=minio
+        - traefik.http.services.minio.loadbalancer.server.port=9000
+        - traefik.http.routers.minio-console.rule=Host(`minio-console.{{ domain_suffix }}`)
+        - traefik.http.routers.minio-console.entrypoints=websecure
+        - traefik.http.routers.minio-console.tls.certresolver=letsencrypt
+        - traefik.http.routers.minio-console.service=minio-console
+        - traefik.http.services.minio-console.loadbalancer.server.port=9001
 
 volumes:
   minio_data:
