@@ -20,6 +20,10 @@ Always insert in the first line of the file:
 version: "3.8"
 ```
 
+### Image tags
+
+When not provided, search the corresponding registry for the most recent stable tag and use the corresponding major and minor version numbers.
+
 ### Ignored options
 
 Use the provided reference to determine which options are ignored in Docker Swarm, and strip them out of the Docker Compose file.
