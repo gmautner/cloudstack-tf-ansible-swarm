@@ -43,7 +43,7 @@ services:
           - node.labels.system == monitoring
       labels:
         - traefik.enable=true
-        - traefik.http.routers.prometheus.rule=Host(`prometheus.${DOMAIN_SUFFIX}`)
+        - traefik.http.routers.prometheus.rule=Host(`prometheus.{{ domain_suffix }}`)
         - traefik.http.routers.prometheus.entrypoints=websecure
         - traefik.http.routers.prometheus.tls.certresolver=letsencrypt
         - traefik.http.services.prometheus.loadbalancer.server.port=9090
@@ -68,7 +68,7 @@ services:
           - node.labels.system == monitoring
       labels:
         - traefik.enable=true
-        - traefik.http.routers.alertmanager.rule=Host(`alertmanager.${DOMAIN_SUFFIX}`)
+        - traefik.http.routers.alertmanager.rule=Host(`alertmanager.{{ domain_suffix }}`)
         - traefik.http.routers.alertmanager.entrypoints=websecure
         - traefik.http.routers.alertmanager.tls.certresolver=letsencrypt
         - traefik.http.services.alertmanager.loadbalancer.server.port=9093
@@ -133,7 +133,7 @@ services:
           - node.labels.system == monitoring
       labels:
         - traefik.enable=true
-        - traefik.http.routers.grafana.rule=Host(`grafana.${DOMAIN_SUFFIX}`)
+        - traefik.http.routers.grafana.rule=Host(`grafana.{{ domain_suffix }}`)
         - traefik.http.routers.grafana.entrypoints=websecure
         - traefik.http.routers.grafana.tls.certresolver=letsencrypt
         - traefik.http.services.grafana.loadbalancer.server.port=3000

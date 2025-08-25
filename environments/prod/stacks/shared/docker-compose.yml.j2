@@ -19,7 +19,7 @@ services:
           memory: 256M
       labels:
         - traefik.enable=true
-        - traefik.http.routers.echoserver.rule=Host(`echo.${DOMAIN_SUFFIX}`)
+        - traefik.http.routers.echoserver.rule=Host(`echo.{{ domain_suffix }}`)
         - traefik.http.routers.echoserver.entrypoints=websecure
         - traefik.http.routers.echoserver.tls.certresolver=letsencrypt
         - traefik.http.services.echoserver.loadbalancer.server.port=80

@@ -17,7 +17,7 @@ services:
           - node.hostname == kafbat
       labels:
         - traefik.enable=true
-        - traefik.http.routers.kafbat.rule=Host(`kafbat.${DOMAIN_SUFFIX}`)
+        - traefik.http.routers.kafbat.rule=Host(`kafbat.{{ domain_suffix }}`)
         - traefik.http.routers.kafbat.entrypoints=websecure
         - traefik.http.routers.kafbat.tls.certresolver=letsencrypt
         - traefik.http.services.kafbat.loadbalancer.server.port=8080

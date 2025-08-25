@@ -47,7 +47,7 @@ services:
       - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_password
       - NEXTCLOUD_ADMIN_PASSWORD_FILE=/run/secrets/nextcloud_admin_password
       - NEXTCLOUD_ADMIN_USER=nextcloud
-      - NEXTCLOUD_TRUSTED_DOMAINS=nextcloud.${DOMAIN_SUFFIX}
+      - NEXTCLOUD_TRUSTED_DOMAINS=nextcloud.{{ domain_suffix }}
     secrets:
       - nextcloud_admin_password
       - postgres_password
@@ -61,7 +61,7 @@ services:
           - node.hostname == nextcloud
       labels:
         - traefik.enable=true
-        - traefik.http.routers.nextcloud.rule=Host(`nextcloud.${DOMAIN_SUFFIX}`)
+        - traefik.http.routers.nextcloud.rule=Host(`nextcloud.{{ domain_suffix }}`)
         - traefik.http.routers.nextcloud.entrypoints=websecure
         - traefik.http.routers.nextcloud.tls.certresolver=letsencrypt
         - traefik.http.services.nextcloud.loadbalancer.server.port=80
