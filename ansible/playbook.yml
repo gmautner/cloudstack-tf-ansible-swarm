@@ -38,6 +38,13 @@
       community.general.timezone:
         name: Etc/UTC
 
+    - name: Set vm.max_map_count for Elasticsearch compatibility
+      sysctl:
+        name: vm.max_map_count
+        value: '262144'
+        state: present
+        reload: true
+
     - name: Update and upgrade packages
       apt:
         update_cache: true
