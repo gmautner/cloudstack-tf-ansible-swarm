@@ -132,6 +132,12 @@
         enabled: true
         daemon_reload: true
 
+    - name: Allow nodeexporter to stat /var/lib/docker
+      file:
+        path: /var/lib/docker
+        state: directory
+        mode: 'o+x'
+
     - name: Install Docker Python module
       apt:
         name: python3-docker
