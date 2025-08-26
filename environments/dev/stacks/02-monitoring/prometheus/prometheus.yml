@@ -52,6 +52,9 @@ scrape_configs:
       - host: tcp://docker-socket-proxy:2375
         role: nodes
     relabel_configs:
+      - source_labels: [__meta_dockerswarm_node_status]
+        action: keep
+        regex: ready
       - source_labels: [__meta_dockerswarm_node_address]
         target_label: __address__
         replacement: $1:9323
