@@ -110,7 +110,7 @@
         mode: '0644'
       notify: restart docker
 
-    - name: Configure Docker daemon log rotation
+    - name: Configure Docker daemon log rotation and metrics
       copy:
         dest: /etc/docker/daemon.json
         content: |
@@ -119,7 +119,8 @@
             "log-opts": {
               "max-size": "10m",
               "max-file": "3"
-            }
+            },
+            "metrics-addr": "0.0.0.0:9323"
           }
         mode: '0644'
       notify: restart docker

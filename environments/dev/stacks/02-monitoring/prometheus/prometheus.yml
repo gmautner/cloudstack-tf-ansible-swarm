@@ -45,6 +45,20 @@ scrape_configs:
     static_configs:
       - targets: ['traefik:8080']
 
+  # https://prometheus.io/docs/guides/dockerswarm/#monitoring-docker-daemons
+  - job_name: 'docker-daemon'
+    scrape_interval: 15s
+    dockerswarm_sd_configs:
+      - host: tcp://docker-socket-proxy:2375
+        role: nodes
+    relabel_configs:
+      - source_labels: [__meta_dockerswarm_node_address]
+        target_label: __address__
+        replacement: $1:9323
+      # Set hostname as instance label
+      - source_labels: [__meta_dockerswarm_node_hostname]
+        target_label: instance
+        
 alerting:
   alertmanagers:
   - scheme: http

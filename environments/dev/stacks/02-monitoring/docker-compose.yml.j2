@@ -8,6 +8,8 @@ networks:
     external: true
   traefik_network:
     external: true
+  socket_network:
+    external: true
 
 volumes:
     prometheus_data: {}
@@ -36,6 +38,7 @@ services:
     networks:
       - monitor-net
       - traefik_network
+      - socket_network
     deploy:
       replicas: 1
       placement:
