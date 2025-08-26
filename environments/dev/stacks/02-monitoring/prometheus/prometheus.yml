@@ -56,6 +56,11 @@ scrape_configs:
       # Use the node hostname as the instance label.
       - source_labels: [__meta_dockerswarm_node_hostname]
         target_label: instance
+      # Add service name and stack labels
+      - source_labels: ["__meta_dockerswarm_service_name"]
+        target_label: 'service_name'
+      - source_labels: ["__meta_dockerswarm_container_label_com_docker_stack_namespace"]
+        target_label: 'stack'
 
   - job_name: 'prometheus'
     scrape_interval: 10s
