@@ -349,21 +349,17 @@
       loop_control:
         label: "{{ item.path | basename }}"
 
-    - name: Find which sync operations had changes
+    - name: Create list of changed stacks
       set_fact:
-        changed_sync_results: "{{ sync_results.results | selectattr('changed', 'equalto', true) | list }}"
-
-    - name: Extract stack directory paths from changed syncs
-      set_fact:
-        changed_stack_paths: "{{ changed_sync_results | map(attribute='item.path') | list }}"
-
-    - name: Get stack directory names from paths
-      set_fact:
-        changed_stack_dirs: "{{ changed_stack_paths | map('basename') | list }}"
-
-    - name: Remove numeric prefixes from stack names
-      set_fact:
-        changed_stacks: "{{ changed_stack_dirs | map('regex_replace', '^[0-9]+-', '') | list }}"
+        changed_stacks: >-
+          {{
+            sync_results.results
+            | selectattr('changed', 'equalto', true)
+            | map(attribute='item.path')
+            | map('basename')
+            | map('regex_replace', '^[0-9]+-', '')
+            | list
+          }}
 
     - name: Show changed stacks that need service updates
       debug:
@@ -375,19 +371,6 @@
       register: stack_services
       loop: "{{ changed_stacks }}"
       when: changed_stacks | length > 0
-
-    - name: Force update services in changed stacks
-      command: docker service update --force {{ service_name }}
-      loop: "{{ stack_services.results | subelements('stdout_lines') }}"
-      loop_control:
-        loop_var: service_item
-        label: "{{ service_item.1 }}"
-      vars:
-        service_name: "{{ service_item.1 }}"
-      when: 
-        - changed_stacks | length > 0
-        - stack_services.results is defined
-        - service_item.1 | length > 0
 
     # - name: Find docker-compose templates on Ansible controller
     #   find:
@@ -428,3 +411,17 @@
         DOMAIN_SUFFIX: "{{ domain_suffix }}"
       with_items: "{{ compose_files.files | sort(attribute='path') }}"
       when: compose_files.files | length > 0
+
+    # Forçamos update de serviços quando mudam arquivos diferente do compose na árvore da stack, o que não é detectado pelo passo acima.
+    - name: Force update services in changed stacks
+      command: docker service update --force {{ service_name }}
+      loop: "{{ stack_services.results | subelements('stdout_lines') }}"
+      loop_control:
+        loop_var: service_item
+        label: "{{ service_item.1 }}"
+      vars:
+        service_name: "{{ service_item.1 }}"
+      when: 
+        - changed_stacks | length > 0
+        - stack_services.results is defined
+        - service_item.1 | length > 0
