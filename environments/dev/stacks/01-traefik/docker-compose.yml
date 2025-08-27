@@ -34,7 +34,7 @@ services:
       - --entrypoints.web.forwardedHeaders.trustedIPs=192.168.1.0/24,10.0.0.0/8,172.16.0.0/12
       - --entrypoints.websecure.forwardedHeaders.trustedIPs=192.168.1.0/24,10.0.0.0/8,172.16.0.0/12
       - --certificatesresolvers.letsencrypt.acme.tlschallenge=true
-      - --certificatesresolvers.letsencrypt.acme.email=admin@{{ domain_suffix }}
+      - "--certificatesresolvers.letsencrypt.acme.email=admin@${DOMAIN_SUFFIX}"
       - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
       - --entrypoints.web.http.redirections.entrypoint.to=websecure
       - --entrypoints.web.http.redirections.entrypoint.scheme=https
@@ -54,7 +54,7 @@ services:
           - node.hostname == manager-1
       labels:
         - traefik.enable=true
-        - traefik.http.routers.traefik.rule=Host(`traefik.{{ domain_suffix }}`)
+        - traefik.http.routers.traefik.rule=Host(`traefik.${DOMAIN_SUFFIX}`)
         - traefik.http.routers.traefik.entrypoints=websecure
         - traefik.http.routers.traefik.tls.certresolver=letsencrypt
         - traefik.http.routers.traefik.service=api@internal

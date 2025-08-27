@@ -335,22 +335,22 @@
       delegate_to: localhost
       become: false
 
-    - name: Find docker-compose templates on Ansible controller
-      find:
-        paths: "{{ stacks_dir }}"
-        patterns: "docker-compose.yml.j2"
-        recurse: true
-      register: compose_templates_local
-      delegate_to: localhost
-      become: false
+    # - name: Find docker-compose templates on Ansible controller
+    #   find:
+    #     paths: "{{ stacks_dir }}"
+    #     patterns: "docker-compose.yml.j2"
+    #     recurse: true
+    #   register: compose_templates_local
+    #   delegate_to: localhost
+    #   become: false
 
     # Render templates, stripping the .j2 extension from the destination filename
-    - name: Render docker-compose templates from controller to remote
-      template:
-        src: "{{ item.path }}"
-        dest: "/opt/stacks/{{ item.path | relpath(stacks_dir) | regex_replace('\\.j2$', '') }}"
-      with_items: "{{ compose_templates_local.files }}"
-      when: compose_templates_local.files | length > 0
+    # - name: Render docker-compose templates from controller to remote
+    #   template:
+    #     src: "{{ item.path }}"
+    #     dest: "/opt/stacks/{{ item.path | relpath(stacks_dir) | regex_replace('\\.j2$', '') }}"
+    #   with_items: "{{ compose_templates_local.files }}"
+    #   when: compose_templates_local.files | length > 0
 
     - name: Find docker-compose files in NFS mount
       find:

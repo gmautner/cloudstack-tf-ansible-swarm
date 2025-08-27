@@ -42,7 +42,7 @@ services:
           - node.hostname == wp
       labels:
         - traefik.enable=true
-        - traefik.http.routers.wordpress.rule=Host(`portal.{{ domain_suffix }}`)
+        - traefik.http.routers.wordpress.rule=Host(`portal.${DOMAIN_SUFFIX}`)
         - traefik.http.routers.wordpress.entrypoints=websecure
         - traefik.http.routers.wordpress.tls.certresolver=letsencrypt
         - traefik.http.services.wordpress.loadbalancer.server.port=80
@@ -56,7 +56,7 @@ services:
       replicas: 1
       labels:
         - traefik.enable=true
-        - traefik.http.routers.hello.rule=Host(`hello.{{ domain_suffix }}`)
+        - traefik.http.routers.hello.rule=Host(`hello.${DOMAIN_SUFFIX}`)
         - traefik.http.routers.hello.entrypoints=websecure
         - traefik.http.routers.hello.tls.certresolver=letsencrypt
         - traefik.http.services.hello.loadbalancer.server.port=5000
