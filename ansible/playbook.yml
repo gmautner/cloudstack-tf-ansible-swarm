@@ -325,16 +325,38 @@
         - secrets_config.docker_secrets is defined
         - secrets_context[item.env_var] is defined or lookup('env', item.env_var) != ""
 
-    - name: Copy entire stacks directory to NFS mount
+    - name: Find stack subdirectories on Ansible controller
+      find:
+        paths: "{{ stacks_dir }}"
+        file_type: directory
+        depth: 1
+      register: stack_subdirs
+      delegate_to: localhost
+      become: false
+
+    - name: Sync each stack directory individually to NFS mount
       synchronize:
-        src: "{{ stacks_dir }}/"
-        dest: /opt/stacks/
+        src: "{{ item.path }}/"
+        dest: "/opt/stacks/{{ item.path | basename }}/"
         delete: true
         archive: false # don't copy owner and perms from localhost
         recursive: true # needed because we turned off archive
         times: true # preserve times across task runs to avoid unneeded updates
+        rsync_opts:
+          - "--itemize-changes"
       delegate_to: localhost
       become: false
+      register: sync_results
+      loop: "{{ stack_subdirs.files }}"
+      loop_control:
+        label: "{{ item.path | basename }}"
+
+    - name: Display sync results for each stack
+      debug:
+        msg: "Stack '{{ item.item.path | basename }}': {{ 'CHANGED' if item.changed else 'NO CHANGES' }}"
+      loop: "{{ sync_results.results }}"
+      loop_control:
+        label: "{{ item.item.path | basename }}"
 
     # - name: Find docker-compose templates on Ansible controller
     #   find:
