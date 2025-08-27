@@ -19,7 +19,6 @@ services:
     command:
       - |
         export MONGO_URL="mongodb://rocketchat:$$(cat /run/secrets/mongodb_password)@mongo1:27017,mongo2:27017,mongo3:27017/rocketchat?authSource=admin&replicaSet=rs0"
-        echo ${DOMAIN_SUFFIX}
         exec node main.js
     environment:
       ROOT_URL: https://rocketchat.${DOMAIN_SUFFIX}
