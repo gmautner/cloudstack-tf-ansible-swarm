@@ -1,7 +1,3 @@
-# On the first mongo node, run:
-# mongosh --username rocketchat --password <MONGODB_PASSWORD> --authenticationDatabase admin
-# rs.initiate({ _id: "rs0", members: [ { _id: 0, host: "mongo1:27017" }, { _id: 1, host: "mongo2:27017" }, { _id: 2, host: "mongo3:27017" } ] })
-# 
 # In case you're restoring a backup, you need to re-sync the other nodes.
 # On the node where the data was restored, run:
 # mongosh --username rocketchat --password <MONGODB_PASSWORD> --authenticationDatabase admin
