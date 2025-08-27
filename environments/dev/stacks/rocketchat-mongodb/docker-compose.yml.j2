@@ -1,14 +1,14 @@
-# Rodar na interface do mongo1:
-# rs.initiate({
-#  _id: "rs0",
-#  members: [
-#    {_id: 0, host: "mongo1"},
-#    {_id: 1, host: "mongo2"},
-#    {_id: 2, host: "mongo3"}
-#  ]
-# })
-
-version: '3.8'
+# On the first mongo node, run:
+# mongosh --username rocketchat --password <MONGODB_PASSWORD> --authenticationDatabase admin
+# rs.initiate({ _id: "rs0", members: [ { _id: 0, host: "mongo1:27017" }, { _id: 1, host: "mongo2:27017" }, { _id: 2, host: "mongo3:27017" } ] })
+# 
+# In case you're restoring a backup, you need to re-sync the other nodes.
+# On the node where the data was restored, run:
+# mongosh --username rocketchat --password <MONGODB_PASSWORD> --authenticationDatabase admin
+# use local
+# db.oplog.rs.drop()
+# Then restart the other nodes.
+version: "3.8"
 
 networks:
   rocketchat_network:
@@ -125,6 +125,57 @@ services:
       placement:
         constraints:
           - node.hostname == mongo3
+
+  mongo-init:
+    image: mongo:7.0
+    secrets:
+      - mongodb_password
+    networks:
+      - rocketchat_network
+    entrypoint: [ "/bin/sh", "-c" ]
+    command:
+      - |
+        set +x
+        export MONGODB_PASSWORD=$$(cat /run/secrets/mongodb_password)
+
+        echo "Waiting for mongo1..."
+        until mongosh --host mongo1 -u rocketchat -p "$$MONGODB_PASSWORD" --authenticationDatabase admin --eval "printjson(db.adminCommand('ping'))"; do
+          sleep 2
+        done
+
+        echo "Waiting for mongo2..."
+        until mongosh --host mongo2 -u rocketchat -p "$$MONGODB_PASSWORD" --authenticationDatabase admin --eval "printjson(db.adminCommand('ping'))"; do
+          sleep 2
+        done
+
+        echo "Waiting for mongo3..."
+        until mongosh --host mongo3 -u rocketchat -p "$$MONGODB_PASSWORD" --authenticationDatabase admin --eval "printjson(db.adminCommand('ping'))"; do
+          sleep 2
+        done
+        
+        if mongosh --host mongo1 -u rocketchat -p "$$MONGODB_PASSWORD" --authenticationDatabase admin --eval "rs.status().ok" | grep -q "1"; then
+          echo "Replica set already initialized."
+          exit 0
+        fi
+
+        echo "Initializing replica set..."
+        mongosh --host mongo1 -u rocketchat -p "$$MONGODB_PASSWORD" --authenticationDatabase admin <<EOF
+        rs.initiate({
+          _id: "rs0",
+          members: [
+            { _id: 0, host: "mongo1:27017" },
+            { _id: 1, host: "mongo2:27017" },
+            { _id: 2, host: "mongo3:27017" }
+          ]
+        })
+        EOF
+
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+      restart_policy:
+        condition: on-failure
 
 volumes:
   mongo1_data:
