@@ -342,8 +342,6 @@
         archive: false # don't copy owner and perms from localhost
         recursive: true # needed because we turned off archive
         times: true # preserve times across task runs to avoid unneeded updates
-        rsync_opts:
-          - "--itemize-changes"
       delegate_to: localhost
       become: false
       register: sync_results
@@ -351,12 +349,45 @@
       loop_control:
         label: "{{ item.path | basename }}"
 
-    - name: Display sync results for each stack
+    - name: Find which sync operations had changes
+      set_fact:
+        changed_sync_results: "{{ sync_results.results | selectattr('changed', 'equalto', true) | list }}"
+
+    - name: Extract stack directory paths from changed syncs
+      set_fact:
+        changed_stack_paths: "{{ changed_sync_results | map(attribute='item.path') | list }}"
+
+    - name: Get stack directory names from paths
+      set_fact:
+        changed_stack_dirs: "{{ changed_stack_paths | map('basename') | list }}"
+
+    - name: Remove numeric prefixes from stack names
+      set_fact:
+        changed_stacks: "{{ changed_stack_dirs | map('regex_replace', '^[0-9]+-', '') | list }}"
+
+    - name: Show changed stacks that need service updates
       debug:
-        msg: "Stack '{{ item.item.path | basename }}': {{ 'CHANGED' if item.changed else 'NO CHANGES' }}"
-      loop: "{{ sync_results.results }}"
+        msg: "Stacks that changed and need service updates: {{ changed_stacks }}"
+      when: changed_stacks | length > 0
+
+    - name: Get services for each changed stack
+      command: docker service ls --filter label=com.docker.stack.namespace={{ item }} --format "{{ '{{' }}.Name{{ '}}' }}"
+      register: stack_services
+      loop: "{{ changed_stacks }}"
+      when: changed_stacks | length > 0
+
+    - name: Force update services in changed stacks
+      command: docker service update --force {{ service_name }}
+      loop: "{{ stack_services.results | subelements('stdout_lines') }}"
       loop_control:
-        label: "{{ item.item.path | basename }}"
+        loop_var: service_item
+        label: "{{ service_item.1 }}"
+      vars:
+        service_name: "{{ service_item.1 }}"
+      when: 
+        - changed_stacks | length > 0
+        - stack_services.results is defined
+        - service_item.1 | length > 0
 
     # - name: Find docker-compose templates on Ansible controller
     #   find:
