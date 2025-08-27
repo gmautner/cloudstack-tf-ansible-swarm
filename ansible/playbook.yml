@@ -332,6 +332,7 @@
         delete: true
         archive: false # don't copy owner and perms from localhost
         recursive: true # needed because we turned off archive
+        times: true # preserve times across task runs to avoid unneeded updates
       delegate_to: localhost
       become: false
 
