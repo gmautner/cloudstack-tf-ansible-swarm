@@ -32,10 +32,9 @@ variable "env" {
   type        = string
 }
 
-variable "domain_suffix" {
-  description = "Domain suffix for the cluster"
+variable "base_domain" {
+  description = "Base domain for the cluster"
   type        = string
-  default     = ""
 }
 
 variable "workers" {

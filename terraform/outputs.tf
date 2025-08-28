@@ -55,12 +55,16 @@ output "private_key" {
   sensitive   = true
 }
 
+locals {
+  domain_suffix = "${var.env}.${var.cluster_name}.${var.base_domain}"
+}
+
 # Generate Ansible inventory file
 resource "local_file" "ansible_inventory" {
   content = templatefile("${path.module}/inventory.tpl", {
     cluster_name                = var.cluster_name
     public_ip                   = cloudstack_ipaddress.main.ip_address
-    domain_suffix               = var.domain_suffix
+    domain_suffix               = local.domain_suffix
     automatic_reboot            = var.automatic_reboot
     automatic_reboot_time_utc   = var.automatic_reboot_time_utc
     managers = [
