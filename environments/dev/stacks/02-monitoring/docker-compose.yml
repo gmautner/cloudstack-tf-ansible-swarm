@@ -59,6 +59,7 @@ services:
     command:
       - '--config.file=/etc/alertmanager/config.yml'
       - '--storage.path=/alertmanager'
+      - '--web.external-url=https://alertmanager.${DOMAIN_SUFFIX}'
     networks:
       - monitor-net
       - traefik_network
