@@ -8,7 +8,8 @@ networks:
 services:
   docker-socket-proxy:
     image: linuxserver/socket-proxy:3.2.3
-    # Ref https://github.com/Tecnativa/docker-socket-proxy?tab=readme-ov-file#grant-or-revoke-access-to-certain-api-sections
+    # Ref https://github.com/linuxserver/docker-socket-proxy?tab=readme-ov-file#parameters
+    # Parâmetros levantados a partir de logs do acesso pelo Traefik e Prometheus, dois clientes que acessam a API do Swarm.
     environment:
       - NODES=1
       - SERVICES=1
