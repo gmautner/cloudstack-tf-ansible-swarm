@@ -364,7 +364,7 @@
           }}
 
     - name: Get services for each changed stack
-      command: docker service ls --filter label=com.docker.stack.namespace={{ item }} --format "{{ '{{' }}.Name{{ '}}' }}"
+      shell: docker service ls --filter label=com.docker.stack.namespace={{ item }} --format json | jq -r '.Name'
       register: stack_services
       loop: "{{ changed_stacks }}"
       when: changed_stacks | length > 0
