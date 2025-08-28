@@ -18,6 +18,13 @@ manager_count = 1
 
 # Workers configuration
 workers = {
+  # Workers for traefik stack
+  "traefik" = {
+    plan         = "medium",
+    data_size_gb = 10
+  },
+
+  # Workers for wordpress-mysql stack
   "wp" = {
     plan         = "medium",
     data_size_gb = 120,
