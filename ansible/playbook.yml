@@ -4,7 +4,7 @@
   become: true
   vars:
     data_disk_device: /dev/vdb
-    data_mount_point: /var/lib/docker/volumes
+    data_mount_point: /mnt/docker-data
   
   tasks:
     - name: Check if data disk exists
@@ -17,6 +17,16 @@
         fstype: ext4
         resizefs: true
         dev: "{{ data_disk_device }}"
+      when: data_disk.stat.exists
+
+    # Usamos um diretório de volumes diferente do padrão do Docker para evitar restrições de permissões (exemplo: nodeexporter)
+    - name: Mount data disk to Docker data root directory
+      mount:
+        path: "{{ data_mount_point }}"
+        src: "{{ data_disk_device }}"
+        fstype: ext4
+        opts: defaults
+        state: mounted
       when: data_disk.stat.exists
 
     # FIX enquanto houver problema GRUB
@@ -112,7 +122,7 @@
         mode: '0644'
       notify: restart docker
 
-    - name: Configure Docker daemon log rotation and metrics
+    - name: Configure Docker daemon log rotation, metrics and data root
       copy:
         dest: /etc/docker/daemon.json
         content: |
@@ -122,7 +132,8 @@
               "max-size": "10m",
               "max-file": "3"
             },
-            "metrics-addr": "0.0.0.0:9323"
+            "metrics-addr": "0.0.0.0:9323",
+            "data-root": "{{ data_mount_point }}"
           }
         mode: '0644'
       notify: restart docker
@@ -134,26 +145,10 @@
         enabled: true
         daemon_reload: true
 
-    - name: Allow nodeexporter to stat /var/lib/docker
-      file:
-        path: /var/lib/docker
-        state: directory
-        mode: 'o+x'
-
     - name: Install Docker Python module
       apt:
         name: python3-docker
         update_cache: true
-
-    # Mount data disk to Docker volumes directory (no volumes exist yet after fresh install)
-    - name: Mount data disk to Docker volumes directory
-      mount:
-        path: "{{ data_mount_point }}"
-        src: "{{ data_disk_device }}"
-        fstype: ext4
-        opts: defaults
-        state: mounted
-      when: data_disk.stat.exists
 
     - name: Calculate available memory for each host
       set_fact:
