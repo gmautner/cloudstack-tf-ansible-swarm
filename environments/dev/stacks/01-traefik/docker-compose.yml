@@ -31,7 +31,7 @@ services:
       - --entrypoints.web.forwardedHeaders.trustedIPs=192.168.1.0/24,10.0.0.0/8,172.16.0.0/12
       - --entrypoints.websecure.forwardedHeaders.trustedIPs=192.168.1.0/24,10.0.0.0/8,172.16.0.0/12
       - --certificatesresolvers.letsencrypt.acme.tlschallenge=true
-      - "--certificatesresolvers.letsencrypt.acme.email=admin@${DOMAIN_SUFFIX}"
+      - --certificatesresolvers.letsencrypt.acme.email=admin@${DOMAIN_SUFFIX}
       - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
       - --entrypoints.web.http.redirections.entrypoint.to=websecure
       - --entrypoints.web.http.redirections.entrypoint.scheme=https
