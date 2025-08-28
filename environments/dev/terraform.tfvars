@@ -30,25 +30,25 @@ workers = {
     plan         = "large",
     data_size_gb = 100
   },
-  "shared-1" = {
+  "echo-1" = {
     plan         = "micro",
     data_size_gb = 10,
     labels = {
-      "pool" = "shared"
+      "pool" = "echo"
     }
   },
-  "shared-2" = {
+  "echo-2" = {
     plan         = "micro",
     data_size_gb = 10,
     labels = {
-      "pool" = "shared"
+      "pool" = "echo"
     }
   },
-  "shared-3" = {
+  "echo-3" = {
     plan         = "micro",
     data_size_gb = 10,
     labels = {
-      "pool" = "shared"
+      "pool" = "echo"
     }
   },
 

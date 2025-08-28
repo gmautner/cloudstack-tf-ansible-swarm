@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   kafbat-ui:
-    image: ghcr.io/kafbat/kafka-ui:latest
+    image: ghcr.io/kafbat/kafka-ui:v1.3.0
     environment:
       KAFKA_CLUSTERS_0_NAME: local
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: broker-1:19092,broker-2:19092,broker-3:19092
@@ -23,7 +23,7 @@ services:
         - traefik.http.services.kafbat.loadbalancer.server.port=8080
 
   controller-1:
-    image: apache/kafka:latest
+    image: apache/kafka:4.0.0
     networks:
       - kafka_network
     environment:
@@ -44,7 +44,7 @@ services:
           - node.hostname == controller-1
 
   controller-2:
-    image: apache/kafka:latest
+    image: apache/kafka:4.0.0
     networks:
       - kafka_network
     environment:
@@ -65,7 +65,7 @@ services:
           - node.hostname == controller-2
 
   controller-3:
-    image: apache/kafka:latest
+    image: apache/kafka:4.0.0
     networks:
       - kafka_network
     environment:
@@ -86,7 +86,7 @@ services:
           - node.hostname == controller-3
 
   broker-1:
-    image: apache/kafka:latest
+    image: apache/kafka:4.0.0
     networks:
       - kafka_network
     environment:
@@ -112,7 +112,7 @@ services:
           - node.hostname == broker-1
 
   broker-2:
-    image: apache/kafka:latest
+    image: apache/kafka:4.0.0
     networks:
       - kafka_network
     environment:
@@ -138,7 +138,7 @@ services:
           - node.hostname == broker-2
 
   broker-3:
-    image: apache/kafka:latest
+    image: apache/kafka:4.0.0
     networks:
       - kafka_network
     environment:

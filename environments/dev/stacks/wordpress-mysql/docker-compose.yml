@@ -48,7 +48,7 @@ services:
         - traefik.http.services.wordpress.loadbalancer.server.port=80
 
   hello:
-    image: registry.gitlab.platform.lwsa.tech/labs/python-web-app:latest
+    image: registry.gitlab.platform.lwsa.tech/labs/python-web-app:main
     networks:
       - traefik_network
       - wp_network
