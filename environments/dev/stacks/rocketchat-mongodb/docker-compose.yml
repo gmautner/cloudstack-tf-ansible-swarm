@@ -134,6 +134,9 @@ services:
         set +x
         export MONGODB_PASSWORD=$$(cat /run/secrets/mongodb_password)
 
+        echo "Giving time for the service to converge..."
+        sleep 10
+
         echo "Waiting for mongo1..."
         until mongosh --host mongo1 -u rocketchat -p "$$MONGODB_PASSWORD" --authenticationDatabase admin --eval "printjson(db.adminCommand('ping'))"; do
           sleep 2
