@@ -20,19 +20,21 @@
       when: data_disk.stat.exists
 
     # FIX enquanto houver problema GRUB
+    - name: Detect the root disk device
+      shell: |
+        lsblk -J -o NAME,MOUNTPOINT | jq -r '
+          .blockdevices[] |
+          select(.children[]?.mountpoint == "/") |
+          "/dev/" + .name'
+      register: root_disk_result
+      changed_when: false
+
     - name: Configure GRUB to install to main disk automatically
       debconf:
         name: grub-pc
         question: grub-pc/install_devices
-        value: /dev/vda
+        value: "{{ root_disk_result.stdout }}"
         vtype: multiselect
-
-    - name: Configure GRUB to not prompt for device selection
-      debconf:
-        name: grub-pc
-        question: grub-pc/install_devices_empty
-        value: 'false'
-        vtype: boolean
 
     - name: Set timezone to UTC
       community.general.timezone:
@@ -361,33 +363,11 @@
             | list
           }}
 
-    - name: Show changed stacks that need service updates
-      debug:
-        msg: "Stacks that changed and need service updates: {{ changed_stacks }}"
-      when: changed_stacks | length > 0
-
     - name: Get services for each changed stack
       command: docker service ls --filter label=com.docker.stack.namespace={{ item }} --format "{{ '{{' }}.Name{{ '}}' }}"
       register: stack_services
       loop: "{{ changed_stacks }}"
       when: changed_stacks | length > 0
-
-    # - name: Find docker-compose templates on Ansible controller
-    #   find:
-    #     paths: "{{ stacks_dir }}"
-    #     patterns: "docker-compose.yml.j2"
-    #     recurse: true
-    #   register: compose_templates_local
-    #   delegate_to: localhost
-    #   become: false
-
-    # Render templates, stripping the .j2 extension from the destination filename
-    # - name: Render docker-compose templates from controller to remote
-    #   template:
-    #     src: "{{ item.path }}"
-    #     dest: "/opt/stacks/{{ item.path | relpath(stacks_dir) | regex_replace('\\.j2$', '') }}"
-    #   with_items: "{{ compose_templates_local.files }}"
-    #   when: compose_templates_local.files | length > 0
 
     - name: Find docker-compose files in NFS mount
       find:
@@ -414,14 +394,7 @@
 
     # Forçamos update de serviços quando mudam arquivos diferente do compose na árvore da stack, o que não é detectado pelo passo acima.
     - name: Force update services in changed stacks
-      command: docker service update --force {{ service_name }}
-      loop: "{{ stack_services.results | subelements('stdout_lines') }}"
-      loop_control:
-        loop_var: service_item
-        label: "{{ service_item.1 }}"
-      vars:
-        service_name: "{{ service_item.1 }}"
+      command: docker service update --force {{ item }}
+      loop: "{{ stack_services.results | map(attribute='stdout_lines') | flatten }}"
       when: 
-        - changed_stacks | length > 0
         - stack_services.results is defined
-        - service_item.1 | length > 0
