@@ -80,19 +80,27 @@ This template comes with a `dev` and `prod` environment. Let's configure `dev`.
     cp -r ansible/example_stacks/portainer environments/dev/stacks/
     ```
 
-3. **Define Application Secrets**: Edit `environments/dev/secrets.yaml` to list the Docker secrets your applications require. This file maps secret names to the environment variables that will provide their values.
+3. **Define Application Secrets**: The secrets required by your application stacks are automatically discovered from the `secrets:` block at the top level of each `docker-compose.yml` file.
 
-4. **Set Secret Values**: Provide the actual secret values.
-    - **Locally**: Export them as environment variables.
+   For local development, you must create a `environments/dev/secrets.yaml` file to provide the values for these secrets. This file is a simple key-value store. The file is ignored by Git, and the deployment playbook will fail if its permissions are not `600`.
+
+   **Example `environments/dev/secrets.yaml`:**
+   ```yaml
+   mysql_root_password: "your-dev-db-password"
+   wordpress_db_password: "your-dev-wp-password"
+   ```
+
+4. **Set Infrastructure Credentials (Local)**: For local deployments, provide your infrastructure credentials as environment variables. Application secrets should be placed in the `secrets.yaml` file as described above.
+
+    - **Locally**: Export infrastructure credentials as environment variables.
 
       ```bash
+      # Infrastructure Credentials
       export CLOUDSTACK_API_URL="..."
       export CLOUDSTACK_API_KEY="..."
       export CLOUDSTACK_SECRET_KEY="..."
       export AWS_ACCESS_KEY_ID="..."
       export AWS_SECRET_ACCESS_KEY="..."
-      export MYSQL_ROOT_PASSWORD="your-dev-db-password"
-      export WORDPRESS_DB_PASSWORD="your-dev-db-password"
       ```
 
       For private container registries, you can also optionally provide your credentials:
@@ -126,7 +134,7 @@ This project uses GitHub Actions to automate deployments. The workflow is config
 ### Configuration
 
 1.  **Create Environments**: In your GitHub repository, go to **Settings > Environments**. Create an environment for each of your deployment targets (e.g., `dev`, `prod`). The names must match the directory names under `environments/`.
-2.  **Add Secrets**: For each environment you create, add the required secrets. These include your CloudStack and S3 credentials, as well as any application-specific secrets defined in your `secrets.yaml` file.
+2.  **Add Secrets**: For each environment you create, add the required secrets. These include your CloudStack and S3 credentials, as well as any application-specific secrets discovered in your `docker-compose.yml` files.
 
     **Required Environment Secrets:**
     -   `CLOUDSTACK_API_URL`
@@ -134,7 +142,7 @@ This project uses GitHub Actions to automate deployments. The workflow is config
     -   `CLOUDSTACK_SECRET_KEY`
     -   `AWS_ACCESS_KEY_ID`
     -   `AWS_SECRET_ACCESS_KEY`
-    -   Any application secrets (e.g., `MYSQL_ROOT_PASSWORD`).
+    -   Any application secrets (e.g., `mysql_root_password`).
     -   `DOCKER_REGISTRY_URL` (optional)
     -   `DOCKER_REGISTRY_USERNAME` (optional)
     -   `DOCKER_REGISTRY_PASSWORD` (optional)

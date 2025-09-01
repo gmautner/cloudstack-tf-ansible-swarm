@@ -290,11 +290,6 @@
         state: present
         update_cache: true
 
-    - name: Load secrets configuration
-      include_vars:
-        file: "{{ secrets_file }}"
-        name: secrets_config
-
     - name: Logout from registry if password env var is empty
       community.docker.docker_login:
         registry_url: "{{ lookup('env', 'DOCKER_REGISTRY_URL') | default('https://index.docker.io/v1/', true) }}"
@@ -311,16 +306,6 @@
         state: present
       when:
         - (lookup('env', 'DOCKER_REGISTRY_PASSWORD') | default('', true)) != ''
-
-    - name: Create Docker secrets
-      community.docker.docker_secret:
-        name: "{{ item.name }}"
-        data: "{{ secrets_context[item.env_var] | default(lookup('env', item.env_var)) }}"
-        state: present
-      loop: "{{ secrets_config.docker_secrets }}"
-      when:
-        - secrets_config.docker_secrets is defined
-        - secrets_context[item.env_var] is defined or lookup('env', item.env_var) != ""
 
     - name: Find stack subdirectories on Ansible controller
       find:
@@ -363,6 +348,43 @@
       register: stack_services
       loop: "{{ changed_stacks }}"
       when: changed_stacks | length > 0
+
+    - name: Read and combine all secrets from compose files
+      set_fact:
+        all_secrets: "{{ all_secrets | default([]) + (lookup('file', item.path) | from_yaml).secrets.keys() }}"
+      loop: "{{ compose_files_local.files }}"
+      delegate_to: localhost
+      become: false
+
+    - name: Check permissions of secrets file
+      stat:
+        path: "{{ secrets_file }}"
+      register: secrets_file_stat
+      delegate_to: localhost
+      become: false
+      when: secrets_context is not defined or secrets_context is none
+
+    - name: Fail if secrets file permissions are not 600
+      fail:
+        msg: "Permissions for {{ secrets_file }} must be 600. Please run 'chmod 600 {{ secrets_file }}' to fix."
+      when:
+        - secrets_context is not defined or secrets_context is none
+        - secrets_file_stat.stat.exists
+        - secrets_file_stat.stat.mode != '0600'
+
+    - name: Load secret values from environment secrets file
+      include_vars:
+        file: "{{ secrets_file }}"
+        name: secret_values
+      when: secrets_context is not defined or secrets_context is none
+
+    - name: Create Docker secrets from compose files
+      community.docker.docker_secret:
+        name: "{{ item }}"
+        data: "{{ secrets_context[item] | default(secret_values[item]) }}"
+        state: present
+      loop: "{{ all_secrets | unique }}"
+      when: all_secrets is defined
 
     - name: Find docker-compose files in NFS mount
       find:
