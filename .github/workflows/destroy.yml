@@ -1,4 +1,4 @@
-name: Destroy Infrastructure
+name: ⚠️ DESTROY INFRASTRUCTURE ⚠️ !!! DANGER !!!
 
 on:
   workflow_dispatch:
