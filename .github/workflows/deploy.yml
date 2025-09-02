@@ -20,6 +20,12 @@ jobs:
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v2
 
+      - name: Install CloudMonkey
+        run: |
+          wget https://github.com/apache/cloudstack-cloudmonkey/releases/download/6.5.0/cmk.linux.x86-64
+          chmod +x cmk.linux.x86-64
+          sudo mv cmk.linux.x86-64 /usr/local/bin/cmk
+
       - name: Deploy Environment
         env:
           CLOUDSTACK_API_KEY: ${{ secrets.CLOUDSTACK_API_KEY }}
