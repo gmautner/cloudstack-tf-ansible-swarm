@@ -24,6 +24,15 @@ output "domain_suffix" {
   value       = local.domain_suffix
 }
 
+# Output complete deployment instructions
+output "deployment_instructions" {
+  description = "Complete DNS and service access instructions"
+  value = templatefile("${path.module}/instructions.tpl", {
+    traefik_ip    = lookup(cloudstack_ipaddress.public_ips, "traefik", null) != null ? cloudstack_ipaddress.public_ips["traefik"].ip_address : "Not available"
+    domain_suffix = local.domain_suffix
+  })
+}
+
 
 
 # Output calculated manager service offering

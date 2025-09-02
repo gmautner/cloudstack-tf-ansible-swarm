@@ -33,29 +33,7 @@ deploy:
 	cd ansible && ansible-playbook -i $(ANSIBLE_INVENTORY) playbook.yml --extra-vars "$(ANSIBLE_VARS)";
 	@echo "Playbook finished."
 	@echo ""
-	@echo "=========================================="
-	@echo "🎉 DEPLOYMENT COMPLETED SUCCESSFULLY!"
-	@echo "=========================================="
-	@echo ""
-	@echo "📋 REQUIRED DNS CONFIGURATION:"
-	@echo ""
-	@TRAEFIK_IP=$$(cd terraform && terraform output -raw traefik_ip 2>/dev/null || echo "Not available"); \
-	DOMAIN_SUFFIX=$$(cd terraform && terraform output -raw domain_suffix 2>/dev/null || echo "Not available"); \
-	echo "   Create a DNS A record for: *.$$DOMAIN_SUFFIX"; \
-	echo "   Point it to Traefik IP: $$TRAEFIK_IP"; \
-	echo ""; \
-	echo "   Example DNS record:"; \
-	echo "   *.$$DOMAIN_SUFFIX  →  $$TRAEFIK_IP"; \
-	echo ""
-	@echo "🌐 Your services will be accessible at:"
-	@DOMAIN_SUFFIX=$$(cd terraform && terraform output -raw domain_suffix 2>/dev/null || echo "your-domain.com"); \
-	echo "   • Traefik Dashboard: https://traefik.$$DOMAIN_SUFFIX"; \
-	echo "   • Grafana Dashboard: https://grafana.$$DOMAIN_SUFFIX"; \
-	echo "   • Prometheus: https://prometheus.$$DOMAIN_SUFFIX"; \
-	echo "   • Alertmanager: https://alertmanager.$$DOMAIN_SUFFIX"; \
-	echo "   • Other services: https://[service-name].$$DOMAIN_SUFFIX"
-	@echo ""
-	@echo "=========================================="
+	@cd terraform && terraform output -raw deployment_instructions 2>/dev/null || echo "Deployment completed successfully!"
 
 destroy:
 	@echo "Initializing and destroying infrastructure for '$(ENV)'..."
