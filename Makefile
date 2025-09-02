@@ -30,7 +30,7 @@ deploy:
 	echo "Adding key to agent..."; \
 	terraform -chdir=terraform output -raw private_key | ssh-add - > /dev/null && \
 	echo "Running Ansible playbook..." && \
-	cd ansible && ansible-playbook -i $(ANSIBLE_INVENTORY) playbook.yml --extra-vars "$(ANSIBLE_VARS)" --extra-vars "secrets_context='$(SECRETS_CONTEXT)'";
+	cd ansible && ansible-playbook -i $(ANSIBLE_INVENTORY) playbook.yml --extra-vars "$(ANSIBLE_VARS)";
 	@echo "Playbook finished."
 
 destroy:

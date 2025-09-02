@@ -313,14 +313,11 @@
       register: secrets_file_stat
       delegate_to: localhost
       become: false
-      when: not secrets_context
 
     - name: Fail if secrets file is missing or has wrong permissions
       fail:
         msg: "Secrets file '{{ secrets_file }}' must exist and have permissions set to 600. Please create it or run 'chmod 600 {{ secrets_file }}' to fix."
-      when:
-        - not secrets_context
-        - not secrets_file_stat.stat.exists or secrets_file_stat.stat.mode != '0600'
+      when: not secrets_file_stat.stat.exists or secrets_file_stat.stat.mode != '0600'
 
     - name: Find docker-compose files in local stacks directory
       find:
@@ -340,16 +337,15 @@
       delegate_to: localhost
       become: false
 
-    - name: Load secret values from environment secrets file
+    - name: Load secret values from secrets file
       include_vars:
         file: "{{ secrets_file }}"
         name: secret_values
-      when: not secrets_context
 
     - name: Create Docker secrets from compose files
       community.docker.docker_secret:
         name: "{{ item }}"
-        data: "{{ (secrets_context if secrets_context else secret_values)[item] }}"
+        data: "{{ secret_values[item] }}"
         state: present
       loop: "{{ all_secrets | unique }}"
       when: all_secrets is defined

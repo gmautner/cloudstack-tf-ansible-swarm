@@ -26,6 +26,21 @@ jobs:
           chmod +x cmk.linux.x86-64
           sudo mv cmk.linux.x86-64 /usr/local/bin/cmk
 
+      - name: Check secrets.yaml does not exist
+        run: |
+          if [ -f "environments/${{ github.event.inputs.environment }}/secrets.yaml" ]; then
+            echo "Error: secrets.yaml file already exists and should not be committed to git"
+            exit 1
+          fi
+
+      - name: Create secrets.yaml file
+        run: |
+          mkdir -p environments/${{ github.event.inputs.environment }}
+          cat > environments/${{ github.event.inputs.environment }}/secrets.yaml << 'EOF'
+          ${{ toJSON(secrets) }}
+          EOF
+          chmod 600 environments/${{ github.event.inputs.environment }}/secrets.yaml
+
       - name: Deploy Environment
         env:
           CLOUDSTACK_API_KEY: ${{ secrets.CLOUDSTACK_API_KEY }}
@@ -36,5 +51,4 @@ jobs:
           DOCKER_REGISTRY_URL: ${{ secrets.DOCKER_REGISTRY_URL }}
           DOCKER_REGISTRY_USERNAME: ${{ secrets.DOCKER_REGISTRY_USERNAME }}
           DOCKER_REGISTRY_PASSWORD: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
-          SECRETS_CONTEXT: ${{ toJSON(secrets) }}
         run: make deploy ENV=${{ github.event.inputs.environment }}
