@@ -7,7 +7,7 @@ This repository provides a template for deploying multiple, environment-specific
 - **Multi-Environment**: Manage `dev`, `prod`, or any other environment from a single repository.
 - **Centralized Configuration**: All configuration for an environment (Terraform variables, secrets, stacks) is stored in one place.
 - **Infrastructure as Code**: The entire infrastructure is defined with Terraform.
-- **State Isolation**: Terraform state for each environment is stored in a separate file in a shared S3 backend, ensuring complete isolation.
+- **State Isolation**: Terraform state for each environment is stored in a separate local file, ensuring complete isolation.
 - **Automated Configuration**: Ansible configures the Swarm cluster and deploys your application stacks.
 - **CI/CD Ready**: Deploy any environment to CloudStack using GitHub Actions.
 - **Simplified Workflow**: A `Makefile` provides simple, environment-aware commands.
@@ -21,13 +21,14 @@ This repository provides a template for deploying multiple, environment-specific
 │   │   ├── terraform.tfvars
 │   │   ├── secrets.yaml
 │   │   └── stacks/
-│   └── prod/
-│       ├── terraform.tfvars
-│       ├── secrets.yaml
+│   ├── prod/
+│   │   ├── terraform.tfvars
+│   │   ├── secrets.yaml
+│   │   └── stacks/
+│   └── example/
 │       └── stacks/
 │
 ├── ansible/
-│   ├── example_stacks/
 │   └── ... (core Ansible logic)
 │
 ├── terraform/
@@ -37,8 +38,8 @@ This repository provides a template for deploying multiple, environment-specific
 ```
 
 - `environments/`: Contains all environment-specific configurations.
+  - `example/stacks/`: A collection of sample stacks to copy into your environments.
 - `ansible/`: Contains the core, reusable Ansible playbook.
-  - `example_stacks/`: A collection of sample stacks to copy into your environments.
 - `terraform/`: Contains the core, reusable Terraform configuration.
 
 ## Quick Start
@@ -49,35 +50,19 @@ This repository provides a template for deploying multiple, environment-specific
 - Ansible >= 2.10
 - CloudStack API Credentials & SSH Key Pair
 
-### 2. Configure S3 Backend
-
-This template uses an S3 bucket to store the Terraform state.
-
-1. **Create an S3 Bucket**: Create an S3-compatible bucket to store your Terraform state files.
-2. **Configure Backend**: Edit `terraform/backend.tf` and set the `bucket`, `region`, and `endpoint` for your S3 provider.
-3. **Set Credentials**: Provide your S3 credentials.
-    - **Locally**: Export them as environment variables.
-
-      ```bash
-      export AWS_ACCESS_KEY_ID="your-s3-access-key"
-      export AWS_SECRET_ACCESS_KEY="your-s3-secret-key"
-      ```
-
-    - **In CI/CD**: Add `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` to your GitHub repository secrets.
-
-### 3. Configure Your First Environment
+### 2. Configure Your First Environment
 
 This template comes with a `dev` and `prod` environment. Let's configure `dev`.
 
 1. **Customize Terraform Variables**: Edit `environments/dev/terraform.tfvars` with your settings, including a unique `cluster_name`.
 
-2. **Define Application Stacks**: The `environments/dev/stacks/` directory determines which applications are deployed. Copy stacks from `ansible/example_stacks/` into this directory to select them for deployment.
+2. **Define Application Stacks**: The `environments/dev/stacks/` directory determines which applications are deployed. Copy stacks from `environments/example/stacks/` into this directory to select them for deployment.
 
     ```bash
     # Example: Deploy Traefik and Portainer to the 'dev' environment
-    cp -r ansible/example_stacks/00-networks environments/dev/stacks/
-    cp -r ansible/example_stacks/01-traefik environments/dev/stacks/
-    cp -r ansible/example_stacks/portainer environments/dev/stacks/
+    cp -r environments/example/stacks/00-networks environments/dev/stacks/
+    cp -r environments/example/stacks/01-traefik environments/dev/stacks/
+    cp -r environments/example/stacks/portainer environments/dev/stacks/
     ```
 
 3. **Define Application Secrets**: The secrets required by your application stacks are automatically discovered from the `secrets:` block at the top level of each `docker-compose.yml` file.
@@ -99,8 +84,6 @@ This template comes with a `dev` and `prod` environment. Let's configure `dev`.
       export CLOUDSTACK_API_URL="..."
       export CLOUDSTACK_API_KEY="..."
       export CLOUDSTACK_SECRET_KEY="..."
-      export AWS_ACCESS_KEY_ID="..."
-      export AWS_SECRET_ACCESS_KEY="..."
       ```
 
       For private container registries, you can also optionally provide your credentials:
@@ -113,7 +96,7 @@ This template comes with a `dev` and `prod` environment. Let's configure `dev`.
 
     - **In CI/CD**: Add them to your GitHub repository secrets.
 
-### 4. Deploy
+### 3. Deploy
 
 Use the `Makefile` to deploy your environment. The `ENV` variable specifies which environment to target. It defaults to `dev`.
 
@@ -125,7 +108,7 @@ make deploy
 make deploy ENV=prod
 ```
 
-This command will automatically use the correct S3 state file path and configuration files for the specified environment.
+This command will automatically use the correct state file path and configuration files for the specified environment.
 
 ## CI/CD with GitHub Actions
 
@@ -140,8 +123,6 @@ This project uses GitHub Actions to automate deployments. The workflow is config
     -   `CLOUDSTACK_API_URL`
     -   `CLOUDSTACK_API_KEY`
     -   `CLOUDSTACK_SECRET_KEY`
-    -   `AWS_ACCESS_KEY_ID`
-    -   `AWS_SECRET_ACCESS_KEY`
     -   Any application secrets (e.g., `mysql_root_password`).
     -   `DOCKER_REGISTRY_URL` (optional)
     -   `DOCKER_REGISTRY_USERNAME` (optional)
