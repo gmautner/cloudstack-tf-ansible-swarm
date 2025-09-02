@@ -8,8 +8,6 @@ The rules are based on the following reference: [docs/Compose file reference (le
 
 Always check whether the stack is compatible with the above reference and fix it if it is not.
 
-Also, mind that, since we're dealing with `.j2` files, care should be taken when pre-processing the file. For example, use double `$$` to escape the `$` character, etc.
-
 ## Rules
 
 ### Header
@@ -78,7 +76,7 @@ If the service has only one replica, follow the same rules as for services with 
 
 #### Service with more than one replica
 
-In this case, use a placement contraint that ensures the service is spread across all nodes in a pool named after the service. Example:
+In this case, use a placement constraint that ensures the service is spread across all nodes in a pool named after the service. Example:
 
 ```yaml
 services:
