@@ -115,14 +115,26 @@ This template comes with a `dev` and `prod` environment. Let's configure `dev`.
 
 1. **Customize Terraform Variables**: Edit `environments/dev/terraform.tfvars` with your settings, including a unique `cluster_name`.
 
-2. **Define Application Stacks**: The `environments/dev/stacks/` directory determines which applications are deployed. Copy stacks from `environments/example/stacks/` into this directory to select them for deployment.
+2. **Define Application Stacks**: The `environments/dev/stacks/` directory determines which applications are deployed.
+
+   **Base Infrastructure Stacks (Required)**: Always copy the numbered stacks from `environments/example/stacks/` as they contain the essential base infrastructure for the cluster:
 
     ```bash
-    # Example: Deploy Traefik and Portainer to the 'dev' environment
-    cp -r environments/example/stacks/00-networks environments/dev/stacks/
+    # Copy base infrastructure stacks (required for cluster operation)
+    cp -r environments/example/stacks/00-socket-proxy environments/dev/stacks/
     cp -r environments/example/stacks/01-traefik environments/dev/stacks/
-    cp -r environments/example/stacks/portainer environments/dev/stacks/
+    cp -r environments/example/stacks/02-monitoring environments/dev/stacks/
     ```
+
+   **Application Stacks (Optional)**: The other stacks (kafka, wordpress, etc.) are examples to serve as inspiration for your own applications. You can use your own container images or any other externally provided ones:
+
+    ```bash
+    # Example: Add optional application stacks
+    cp -r environments/example/stacks/portainer environments/dev/stacks/
+    cp -r environments/example/stacks/nextcloud-postgres-redis environments/dev/stacks/
+    ```
+
+   **Adapting Docker Compose Files**: If you need to adapt existing Docker Compose files for use with Docker Swarm, refer to the [Docker Compose Guide](DOCKER-COMPOSE-GUIDE.md) file for detailed conversion guidelines and best practices.
 
 3. **Define Application Secrets**: The secrets required by your application stacks are automatically discovered from the `secrets:` block at the top level of each `docker-compose.yml` file.
 
@@ -132,6 +144,21 @@ This template comes with a `dev` and `prod` environment. Let's configure `dev`.
    ```yaml
    mysql_root_password: "your-dev-db-password"
    wordpress_db_password: "your-dev-wp-password"
+   ```
+
+   **Important**: Always define secret names in lowercase, both in your stacks and in the `secrets.yaml` file.
+
+   **Correct naming:**
+
+   ```yaml
+   mysql_root_password: "your-password"  # ✓ Correct
+   ```
+
+   **Incorrect naming:**
+
+   ```yaml
+   MYSQL_ROOT_PASSWORD: "your-password"  # ✗ Wrong
+   MySQL_root_Password: "your-password"  # ✗ Wrong
    ```
 
 4. **Set Infrastructure Credentials (Local)**: For local deployments, provide your infrastructure credentials as environment variables. Application secrets should be placed in the `secrets.yaml` file as described above.
@@ -179,6 +206,8 @@ This project uses GitHub Actions to automate deployments. The workflow is config
 
 1.  **Create Environments**: In your GitHub repository, go to **Settings > Environments**. Create an environment for each of your deployment targets (e.g., `dev`, `prod`). The names must match the directory names under `environments/`.
 2.  **Add Secrets**: For each environment you create, add the required secrets. These include your CloudStack and S3 credentials, as well as any application-specific secrets discovered in your `docker-compose.yml` files.
+
+    **Note**: GitHub will automatically convert secret names to uppercase in the UI, but the deployment process will convert them back to lowercase to match your `secrets.yaml` format. For example, if you define `mysql_root_password` in your stack, GitHub will display it as `MYSQL_ROOT_PASSWORD`, but it will be correctly applied as `mysql_root_password` during deployment.
 
     **Required Environment Secrets:**
     -   `CLOUDSTACK_API_URL`
