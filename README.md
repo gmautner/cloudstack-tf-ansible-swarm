@@ -205,20 +205,25 @@ This project uses GitHub Actions to automate deployments. The workflow is config
 ### Configuration
 
 1.  **Create Environments**: In your GitHub repository, go to **Settings > Environments**. Create an environment for each of your deployment targets (e.g., `dev`, `prod`). The names must match the directory names under `environments/`.
-2.  **Add Secrets**: For each environment you create, add the required secrets. These include your CloudStack and S3 credentials, as well as any application-specific secrets discovered in your `docker-compose.yml` files.
 
-    **Note**: GitHub will automatically convert secret names to uppercase in the UI, but the deployment process will convert them back to lowercase to match your `secrets.yaml` format. For example, if you define `mysql_root_password` in your stack, GitHub will display it as `MYSQL_ROOT_PASSWORD`, but it will be correctly applied as `mysql_root_password` during deployment.
+2.  **Add Repository-Level Secrets**: Go to **Settings > Secrets and variables > Actions** and add the infrastructure credentials as repository secrets. These are shared across all environments:
 
-    **Required Environment Secrets:**
+    **Required Repository Secrets:**
     -   `CLOUDSTACK_API_URL`
     -   `CLOUDSTACK_API_KEY`
     -   `CLOUDSTACK_SECRET_KEY`
     -   `AWS_ACCESS_KEY_ID`
     -   `AWS_SECRET_ACCESS_KEY`
-    -   Any application secrets (e.g., `mysql_root_password`).
     -   `DOCKER_REGISTRY_URL` (optional)
     -   `DOCKER_REGISTRY_USERNAME` (optional)
     -   `DOCKER_REGISTRY_PASSWORD` (optional)
+
+3.  **Add Environment-Specific Secrets**: For each environment you created, add the application-specific secrets discovered in your `docker-compose.yml` files.
+
+    **Note**: GitHub will automatically convert secret names to uppercase in the UI, but the deployment process will convert them back to lowercase to match your `secrets.yaml` format. For example, if you define `mysql_root_password` in your stack, GitHub will display it as `MYSQL_ROOT_PASSWORD`, but it will be correctly applied as `mysql_root_password` during deployment.
+
+    **Environment Secrets (per environment):**
+    -   Any application secrets (e.g., `mysql_root_password`, `nextcloud_admin_password`, etc.)
 
 ### Running the Workflow
 
