@@ -53,13 +53,13 @@ resource "null_resource" "worker_snapshot_policies" {
   }
 
   # Initialize CloudMonkey with credentials
-  # provisioner "local-exec" {
-  #   command = <<-EOT
-  #     cmk set url $CLOUDSTACK_API_URL && \
-  #     cmk set apikey $CLOUDSTACK_API_KEY && \
-  #     cmk set secretkey $CLOUDSTACK_SECRET_KEY
-  #   EOT
-  # }
+  provisioner "local-exec" {
+    command = <<-EOT
+      cmk set url $CLOUDSTACK_API_URL && \
+      cmk set apikey $CLOUDSTACK_API_KEY && \
+      cmk set secretkey $CLOUDSTACK_SECRET_KEY
+    EOT
+  }
 
   # Hourly snapshots
   provisioner "local-exec" {
