@@ -97,7 +97,7 @@ This template uses an S3 bucket to store the Terraform state.
 
 #### Backend and Credential Configuration
 
-1.  **Configure Backend**: Edit `terraform/backend.tf` and set the `bucket` to the name of the S3 bucket you created.
+1.  **Configure Backend**: Edit `terraform/backend.tf` and set the `bucket` to the name of the S3 bucket you created and the `region` to match your bucket's AWS region.
 
 2.  **Set Credentials**: Provide your S3 credentials.
     -   **Locally**: Export the Access Key ID and Secret Access Key you saved as environment variables.
