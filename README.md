@@ -202,6 +202,8 @@ This command will automatically use the correct S3 state file path and configura
 
 This project uses GitHub Actions to automate deployments. The workflow is configured to use **GitHub Environments**, which allows you to define distinct sets of secrets for each of your environments (e.g., `dev`, `prod`).
 
+**⚠️ Important**: GitHub Environments are only available for public repositories or private repositories on paid GitHub plans (Pro, Team, or Enterprise). If you're using a free GitHub plan with a private repository, you'll need to make your repository public to use environments. This shouldn't be a security concern as your secrets remain protected and are not accessible through the public repository.
+
 ### Configuration
 
 1.  **Create Environments**: In your GitHub repository, go to **Settings > Environments**. Create an environment for each of your deployment targets (e.g., `dev`, `prod`). The names must match the directory names under `environments/`.
