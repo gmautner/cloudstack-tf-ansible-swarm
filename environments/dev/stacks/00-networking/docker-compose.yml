@@ -1,0 +1,28 @@
+version: '3.8'
+
+networks:
+  socket_network:
+    name: socket_network
+    driver: overlay
+
+services:
+  docker-socket-proxy:
+    image: linuxserver/socket-proxy:3.2.3
+    # Ref https://github.com/linuxserver/docker-socket-proxy?tab=readme-ov-file#parameters
+    # Parâmetros levantados a partir de logs do acesso pelo Traefik e Prometheus, dois clientes que acessam a API do Swarm.
+    environment:
+      - NODES=1
+      - SERVICES=1
+      - TASKS=1
+      - NETWORKS=1
+      - PING=1
+      - VERSION=1
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - socket_network
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager

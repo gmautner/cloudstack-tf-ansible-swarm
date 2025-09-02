@@ -8,6 +8,8 @@ networks:
     external: true
   traefik_network:
     external: true
+  socket_network:
+    external: true
 
 volumes:
     prometheus_data: {}
@@ -36,11 +38,12 @@ services:
     networks:
       - monitor-net
       - traefik_network
+      - socket_network
     deploy:
       replicas: 1
       placement:
         constraints:
-          - node.labels.system == monitoring
+          - node.hostname == monitoring
       labels:
         - traefik.enable=true
         - traefik.http.routers.prometheus.rule=Host(`prometheus.${DOMAIN_SUFFIX}`)
@@ -56,6 +59,7 @@ services:
     command:
       - '--config.file=/etc/alertmanager/config.yml'
       - '--storage.path=/alertmanager'
+      - '--web.external-url=https://alertmanager.${DOMAIN_SUFFIX}'
     networks:
       - monitor-net
       - traefik_network
@@ -65,7 +69,7 @@ services:
       replicas: 1
       placement:
         constraints:
-          - node.labels.system == monitoring
+          - node.hostname == monitoring
       labels:
         - traefik.enable=true
         - traefik.http.routers.alertmanager.rule=Host(`alertmanager.${DOMAIN_SUFFIX}`)
@@ -76,6 +80,10 @@ services:
 
   nodeexporter:
     image: prom/node-exporter:v1.9.1
+    # Even though not necessary for communication within the overylay network, 
+    # we have to configure a port mapping to allow Prometheus discovery based on Docker Swarm.
+    ports:
+      - "9100:9100"
     volumes:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
@@ -97,6 +105,10 @@ services:
 
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:v0.52.1
+    # Even though not necessary for communication within the overylay network, 
+    # we have to configure a port mapping to allow Prometheus discovery based on Docker Swarm.
+    ports:
+      - "8080:8080"
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:ro
@@ -130,7 +142,7 @@ services:
       replicas: 1
       placement:
         constraints:
-          - node.labels.system == monitoring
+          - node.hostname == monitoring
       labels:
         - traefik.enable=true
         - traefik.http.routers.grafana.rule=Host(`grafana.${DOMAIN_SUFFIX}`)
@@ -146,7 +158,7 @@ services:
       replicas: 1
       placement:
         constraints:
-          - node.labels.system == monitoring
+          - node.hostname == monitoring
 
   promtail:
     image: grafana/promtail:3.5
@@ -178,7 +190,7 @@ services:
       replicas: 1
       placement:
         constraints:
-          - node.labels.system == monitoring
+          - node.hostname == monitoring
 
 secrets:
   slack_api_url:

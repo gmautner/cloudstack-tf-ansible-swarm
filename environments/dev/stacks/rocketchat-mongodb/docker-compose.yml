@@ -1,0 +1,188 @@
+# In case you're restoring a backup, you need to re-sync the other nodes.
+# On the node where the data was restored, run:
+# mongosh --username rocketchat --password <MONGODB_PASSWORD> --authenticationDatabase admin
+# use local
+# db.oplog.rs.drop()
+# Then restart the other nodes.
+version: "3.8"
+
+networks:
+  rocketchat_network:
+    driver: overlay
+  traefik_network:
+    external: true
+
+services:
+  rocketchat:
+    image: registry.rocket.chat/rocketchat/rocket.chat
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        export MONGO_URL="mongodb://rocketchat:$$(cat /run/secrets/mongodb_password)@mongo1:27017,mongo2:27017,mongo3:27017/rocketchat?authSource=admin&replicaSet=rs0"
+        exec node main.js
+    environment:
+      ROOT_URL: https://rocketchat.${DOMAIN_SUFFIX}
+      PORT: 3000
+      DEPLOY_METHOD: docker
+    secrets:
+      - mongodb_password
+    networks:
+      - rocketchat_network
+      - traefik_network
+    deploy:
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.rocketchat.rule=Host(`rocketchat.${DOMAIN_SUFFIX}`)
+        - traefik.http.routers.rocketchat.entrypoints=websecure
+        - traefik.http.routers.rocketchat.tls.certresolver=letsencrypt
+        - traefik.http.services.rocketchat.loadbalancer.server.port=3000
+      replicas: 1
+      placement:
+        constraints:
+          - node.hostname == rocketchat
+
+  mongo1:
+    image: mongo:7.0
+    command: ["--replSet", "rs0", "--bind_ip_all", "--keyFile", "/run/secrets/mongodb_key_string"]
+    volumes:
+      - mongo1_data:/data/db
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=rocketchat
+      - MONGO_INITDB_ROOT_PASSWORD_FILE=/run/secrets/mongodb_password
+    secrets:
+      - source: mongodb_password
+        target: mongodb_password
+        uid: "999"
+        gid: "999"
+        mode: 0400
+      - source: mongodb_key_string
+        target: mongodb_key_string
+        uid: "999"
+        gid: "999"
+        mode: 0400
+    networks:
+      - rocketchat_network
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.hostname == mongo1
+
+  mongo2:
+    image: mongo:7.0
+    command: ["--replSet", "rs0", "--bind_ip_all", "--keyFile", "/run/secrets/mongodb_key_string"]
+    volumes:
+      - mongo2_data:/data/db
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=rocketchat
+      - MONGO_INITDB_ROOT_PASSWORD_FILE=/run/secrets/mongodb_password
+    secrets:
+      - source: mongodb_password
+        target: mongodb_password
+        uid: "999"
+        gid: "999"
+        mode: 0400
+      - source: mongodb_key_string
+        target: mongodb_key_string
+        uid: "999"
+        gid: "999"
+        mode: 0400
+    networks:
+      - rocketchat_network
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.hostname == mongo2
+
+  mongo3:
+    image: mongo:7.0
+    command: ["--replSet", "rs0", "--bind_ip_all", "--keyFile", "/run/secrets/mongodb_key_string"]
+    volumes:
+      - mongo3_data:/data/db
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=rocketchat
+      - MONGO_INITDB_ROOT_PASSWORD_FILE=/run/secrets/mongodb_password
+    secrets:
+      - source: mongodb_password
+        target: mongodb_password
+        uid: "999"
+        gid: "999"
+        mode: 0400
+      - source: mongodb_key_string
+        target: mongodb_key_string
+        uid: "999"
+        gid: "999"
+        mode: 0400
+    networks:
+      - rocketchat_network
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.hostname == mongo3
+
+  mongo-init:
+    image: mongo:7.0
+    secrets:
+      - mongodb_password
+    networks:
+      - rocketchat_network
+    entrypoint: [ "/bin/sh", "-c" ]
+    command:
+      - |
+        set +x
+        export MONGODB_PASSWORD=$$(cat /run/secrets/mongodb_password)
+
+        echo "Giving time for the service to converge..."
+        sleep 10
+
+        echo "Waiting for mongo1..."
+        until mongosh --host mongo1 -u rocketchat -p "$$MONGODB_PASSWORD" --authenticationDatabase admin --eval "printjson(db.adminCommand('ping'))"; do
+          sleep 2
+        done
+
+        echo "Waiting for mongo2..."
+        until mongosh --host mongo2 -u rocketchat -p "$$MONGODB_PASSWORD" --authenticationDatabase admin --eval "printjson(db.adminCommand('ping'))"; do
+          sleep 2
+        done
+
+        echo "Waiting for mongo3..."
+        until mongosh --host mongo3 -u rocketchat -p "$$MONGODB_PASSWORD" --authenticationDatabase admin --eval "printjson(db.adminCommand('ping'))"; do
+          sleep 2
+        done
+        
+        if mongosh --host mongo1 -u rocketchat -p "$$MONGODB_PASSWORD" --authenticationDatabase admin --eval "rs.status().ok" | grep -q "1"; then
+          echo "Replica set already initialized."
+          exit 0
+        fi
+
+        echo "Initializing replica set..."
+        mongosh --host mongo1 -u rocketchat -p "$$MONGODB_PASSWORD" --authenticationDatabase admin <<EOF
+        rs.initiate({
+          _id: "rs0",
+          members: [
+            { _id: 0, host: "mongo1:27017" },
+            { _id: 1, host: "mongo2:27017" },
+            { _id: 2, host: "mongo3:27017" }
+          ]
+        })
+        EOF
+
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+      restart_policy:
+        condition: on-failure
+
+volumes:
+  mongo1_data:
+  mongo2_data:
+  mongo3_data:
+
+secrets:
+  mongodb_password:
+    external: true
+  mongodb_key_string:
+    external: true

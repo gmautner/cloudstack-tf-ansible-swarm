@@ -2,7 +2,6 @@ all:
   vars:
     ansible_user: root
     ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
-
     public_ip: ${public_ip}
     domain_suffix: ${domain_suffix}
     automatic_reboot: ${automatic_reboot}

@@ -1,0 +1,101 @@
+version: '3.8'
+
+networks:
+  nextcloud_network:
+    driver: overlay
+  traefik_network:
+    external: true
+
+services:
+  postgres:
+    image: postgres:17.6-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=nextcloud
+      - POSTGRES_USER=nextcloud
+      - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_password
+    secrets:
+      - postgres_password
+    networks:
+      - nextcloud_network
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.hostname == postgres
+
+  redis:
+    image: redis:8.2-alpine
+    networks:
+      - nextcloud_network
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.hostname == redis
+
+  nextcloud:
+    image: nextcloud:31.0
+    volumes:
+      - nextcloud:/var/www/html
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_USER=nextcloud
+      - POSTGRES_DB=nextcloud
+      - REDIS_HOST=redis
+      - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_password
+      - NEXTCLOUD_ADMIN_PASSWORD_FILE=/run/secrets/nextcloud_admin_password
+      - NEXTCLOUD_ADMIN_USER=nextcloud
+      - NEXTCLOUD_TRUSTED_DOMAINS=nextcloud.${DOMAIN_SUFFIX}
+    secrets:
+      - nextcloud_admin_password
+      - postgres_password
+    networks:
+      - nextcloud_network
+      - traefik_network
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.hostname == nextcloud
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.nextcloud.rule=Host(`nextcloud.${DOMAIN_SUFFIX}`)
+        - traefik.http.routers.nextcloud.entrypoints=websecure
+        - traefik.http.routers.nextcloud.tls.certresolver=letsencrypt
+        - traefik.http.services.nextcloud.loadbalancer.server.port=80
+
+  pgadmin:
+    image: dpage/pgadmin4:9
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@${DOMAIN_SUFFIX}
+      - PGADMIN_DEFAULT_PASSWORD=admin
+    networks:
+      - nextcloud_network
+      - traefik_network
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.hostname == postgres
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.pgadmin.rule=Host(`pgadmin.${DOMAIN_SUFFIX}`)
+        - traefik.http.routers.pgadmin.entrypoints=websecure
+        - traefik.http.routers.pgadmin.tls.certresolver=letsencrypt
+        - traefik.http.services.pgadmin.loadbalancer.server.port=80
+        - traefik.http.routers.pgadmin.middlewares=basic-auth@swarm
+
+volumes:
+  nextcloud:
+  postgres_data:
+  pgadmin_data:
+
+secrets:
+  nextcloud_admin_password:
+    external: true
+  postgres_password:
+    external: true

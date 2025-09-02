@@ -1,0 +1,113 @@
+global:
+  scrape_interval:     15s
+  evaluation_interval: 15s
+
+  # Attach these labels to any time series or alerts when communicating with
+  # external systems (federation, remote storage, Alertmanager).
+  external_labels:
+      monitor: 'docker-swarm'
+
+# Load and evaluate rules in this file every 'evaluation_interval' seconds.
+rule_files:
+  - "alert.rules"
+
+# A scrape configuration containing exactly one endpoint to scrape.
+scrape_configs:
+  - job_name: 'nodeexporter'
+    scrape_interval: 5s
+    dockerswarm_sd_configs:
+      - host: tcp://docker-socket-proxy:2375
+        role: tasks
+    relabel_configs:
+      # Keep only running tasks for the nodeexporter service.
+      - source_labels: [__meta_dockerswarm_service_name]
+        regex: monitoring_nodeexporter
+        action: keep
+      # Do not use endpoints out of the monitoring network
+      - source_labels: [__meta_dockerswarm_network_name]
+        regex: monitor-net
+        action: keep
+      # Only consider when nodeexporter is running
+      - source_labels: [__meta_dockerswarm_task_desired_state]
+        regex: running
+        action: keep
+      # Use the node hostname as the instance label.
+      - source_labels: [__meta_dockerswarm_node_hostname]
+        target_label: instance
+
+  - job_name: 'cadvisor'
+    scrape_interval: 5s
+    dockerswarm_sd_configs:
+      - host: tcp://docker-socket-proxy:2375
+        role: tasks
+    relabel_configs:
+      # Keep only running tasks for the cadvisor service.
+      - source_labels: [__meta_dockerswarm_service_name]
+        regex: monitoring_cadvisor
+        action: keep
+      # Do not use endpoints out of the monitoring network
+      - source_labels: [__meta_dockerswarm_network_name]
+        regex: monitor-net
+        action: keep
+      # Only consider when cadvisor is running
+      - source_labels: [__meta_dockerswarm_task_desired_state]
+        regex: running
+        action: keep
+      # Use the node hostname as the instance label.
+      - source_labels: [__meta_dockerswarm_node_hostname]
+        target_label: instance
+      # Add service name and stack labels
+      - source_labels: ["__meta_dockerswarm_service_name"]
+        target_label: 'service_name'
+      - source_labels: ["__meta_dockerswarm_container_label_com_docker_stack_namespace"]
+        target_label: 'stack'
+
+  - job_name: 'prometheus'
+    scrape_interval: 10s
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'pushgateway'
+    scrape_interval: 10s
+    honor_labels: true
+    static_configs:
+      - targets: ['pushgateway:9091']
+
+  - job_name: 'traefik'
+    scrape_interval: 10s
+    static_configs:
+      - targets: ['traefik:8080']
+
+  # https://prometheus.io/docs/guides/dockerswarm/#monitoring-docker-daemons
+  - job_name: 'docker-daemon'
+    scrape_interval: 15s
+    dockerswarm_sd_configs:
+      - host: tcp://docker-socket-proxy:2375
+        role: nodes
+    relabel_configs:
+      - source_labels: [__meta_dockerswarm_node_status]
+        action: keep
+        regex: ready
+      - source_labels: [__meta_dockerswarm_node_address]
+        target_label: __address__
+        replacement: $1:9323
+      # Set hostname as instance label
+      - source_labels: [__meta_dockerswarm_node_hostname]
+        target_label: instance
+        
+alerting:
+  alertmanagers:
+  - scheme: http
+    static_configs:
+    - targets: 
+      - 'alertmanager:9093'
+
+#  - job_name: 'nginx'
+#    scrape_interval: 10s
+#    static_configs:
+#      - targets: ['nginxexporter:9113']
+
+#  - job_name: 'aspnetcore'
+#    scrape_interval: 10s
+#    static_configs:
+#      - targets: ['eventlog-proxy:5000', 'eventlog:5000']

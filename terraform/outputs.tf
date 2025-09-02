@@ -49,28 +49,39 @@ output "snapshot_schedules" {
   }
 }
 
+output "private_key" {
+  description = "Private key for SSH access to the instances"
+  value       = cloudstack_ssh_keypair.main.private_key
+  sensitive   = true
+}
+
+locals {
+  domain_suffix = "${var.env}.${var.cluster_name}.${var.base_domain}"
+}
+
 # Generate Ansible inventory file
 resource "local_file" "ansible_inventory" {
   content = templatefile("${path.module}/inventory.tpl", {
+    cluster_name                = var.cluster_name
     public_ip                   = cloudstack_ipaddress.main.ip_address
-    domain_suffix               = var.domain_suffix
+    domain_suffix               = local.domain_suffix
     automatic_reboot            = var.automatic_reboot
     automatic_reboot_time_utc   = var.automatic_reboot_time_utc
     managers = [
       for i in range(var.manager_count) : {
         name       = cloudstack_instance.managers[i].name
-        port       = tolist(cloudstack_port_forward.manager_ssh[i].forward)[0].public_port
+        port       = local.all_ssh_forwards[cloudstack_instance.managers[i].id].public_port
         private_ip = cloudstack_instance.managers[i].ip_address
       }
     ]
     workers = [
       for worker_name in keys(var.workers) : {
         name       = cloudstack_instance.workers[worker_name].name
-        port       = tolist(cloudstack_port_forward.worker_ssh[worker_name].forward)[0].public_port
+        port       = local.all_ssh_forwards[cloudstack_instance.workers[worker_name].id].public_port
         private_ip = cloudstack_instance.workers[worker_name].ip_address
         labels     = var.workers[worker_name].labels
       }
     ]
   })
-  filename = "${path.module}/../ansible/inventory.yml"
+  filename = "${path.module}/../environments/${var.env}/inventory.yml"
 }

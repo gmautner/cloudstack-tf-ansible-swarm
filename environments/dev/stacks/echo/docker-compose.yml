@@ -2,21 +2,14 @@ version: '3.8'
 
 services:
   echoserver:
-    image: cilium/echoserver:latest
+    image: cilium/echoserver:1.10.3
     networks:
       - traefik_network
     deploy:
       replicas: 3
       placement:
         constraints:
-          - node.labels.pool == shared
-      resources:
-        limits:
-          cpus: '0.50'
-          memory: 512M
-        reservations:
-          cpus: '0.25'
-          memory: 256M
+          - node.labels.pool == echo
       labels:
         - traefik.enable=true
         - traefik.http.routers.echoserver.rule=Host(`echo.${DOMAIN_SUFFIX}`)

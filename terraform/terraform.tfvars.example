@@ -1,11 +1,8 @@
-# Chave pública SSH para acesso às instâncias
-ssh_public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC... sua-chave-publica-aqui"
-
 # Nome do cluster
-cluster_name = "cluster-1"
+cluster_name = "cluster-1-dev"
 
 # Opcional: Sufixo de domínio para o cluster
-domain_suffix = "cluster-1.giba.tech"
+domain_suffix = "cluster-1-dev.giba.tech"
 
 # Opcional: Restringir acesso SSH (default: ["0.0.0.0/0"])
 # allowed_ssh_cidr_blocks = ["203.0.113.0/24", "198.51.100.0/24"]
