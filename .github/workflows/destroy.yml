@@ -25,6 +25,7 @@ jobs:
           CLOUDSTACK_API_KEY: ${{ secrets.CLOUDSTACK_API_KEY }}
           CLOUDSTACK_API_URL: ${{ secrets.CLOUDSTACK_API_URL }}
           CLOUDSTACK_SECRET_KEY: ${{ secrets.CLOUDSTACK_SECRET_KEY }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          DOCKER_REGISTRY_URL: ${{ secrets.DOCKER_REGISTRY_URL }}
+          DOCKER_REGISTRY_USERNAME: ${{ secrets.DOCKER_REGISTRY_USERNAME }}
+          DOCKER_REGISTRY_PASSWORD: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
         run: make destroy ENV=${{ github.event.inputs.environment }}
