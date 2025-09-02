@@ -107,7 +107,7 @@ This template uses an S3 bucket to store the Terraform state.
         export AWS_SECRET_ACCESS_KEY="your-s3-secret-key"
         ```
 
-    -   **In CI/CD**: Add `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` to your GitHub repository secrets.
+    -   **In CI/CD**: Add `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` to your GitHub repository secrets (see CI/CD section below for more information).
 
 ### 3. Configure Your First Environment
 
@@ -182,7 +182,7 @@ This template comes with a `dev` and `prod` environment. Let's configure `dev`.
       export DOCKER_REGISTRY_PASSWORD="your-password-or-token"
       ```
 
-    - **In CI/CD**: Add them to your GitHub repository secrets.
+    - **In CI/CD**: Add them to your GitHub repository secrets (see CI/CD section below for more information).
 
 ### 4. Deploy
 
