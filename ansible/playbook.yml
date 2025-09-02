@@ -342,10 +342,16 @@
         file: "{{ secrets_file }}"
         name: secret_values
 
+    - name: Create lowercase secret values mapping (handles GitHub Actions uppercase conversion)
+      set_fact:
+        lowercase_secrets_values: "{{ lowercase_secrets_values | default({}) | combine({item.key | lower: item.value}) }}"
+      loop: "{{ secret_values | dict2items }}"
+      when: secret_values is defined
+
     - name: Create Docker secrets from compose files
       community.docker.docker_secret:
         name: "{{ item }}"
-        data: "{{ secret_values[item] }}"
+        data: "{{ lowercase_secrets_values[item] }}"
         state: present
       loop: "{{ all_secrets | unique }}"
       when: all_secrets is defined
