@@ -54,17 +54,60 @@ This repository provides a template for deploying multiple, environment-specific
 
 This template uses an S3 bucket to store the Terraform state.
 
-1. **Create an S3 Bucket**: Create an S3-compatible bucket to store your Terraform state files.
-2. **Configure Backend**: Edit `terraform/backend.tf` and set the `bucket`, `region`, and `endpoint` for your S3 provider.
-3. **Set Credentials**: Provide your S3 credentials.
-    - **Locally**: Export them as environment variables.
+#### Bucket and IAM Policy Setup
 
-      ```bash
-      export AWS_ACCESS_KEY_ID="your-s3-access-key"
-      export AWS_SECRET_ACCESS_KEY="your-s3-secret-key"
-      ```
+1.  **Create an IAM User**:
+    -   In your AWS account, navigate to the IAM service.
+    -   Create a new user. Give it a descriptive name (e.g., `terraform-s3-backend-user`).
+    -   For "Access type", select **Programmatic access**.
+    -   Proceed to the permissions step.
 
-    - **In CI/CD**: Add `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` to your GitHub repository secrets.
+2.  **Create an S3 Bucket**:
+    -   Navigate to the S3 service.
+    -   Create a new, private S3 bucket. Choose a globally unique name (e.g., `your-company-terraform-states`).
+
+3.  **Create and Attach IAM Policy**:
+    -   Go back to the IAM user you are creating.
+    -   Choose **Attach existing policies directly**, then click **Create policy**.
+    -   Go to the **JSON** tab and paste the following policy. Replace `<bucket_name>` with the name of the bucket you just created.
+
+        ```json
+        {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Action": [
+                        "s3:*"
+                    ],
+                    "Resource": [
+                        "arn:aws:s3:::<bucket_name>",
+                        "arn:aws:s3:::<bucket_name>/*"
+                    ]
+                }
+            ]
+        }
+        ```
+    -   Review and create the policy. Give it a descriptive name (e.g., `TerraformS3BackendAccess`).
+    -   Go back to the user creation screen, refresh the policy list, and attach your newly created policy to the user.
+
+4.  **Save User Credentials**:
+    -   Complete the user creation process.
+    -   **Important**: On the final screen, you will see the user's **Access key ID** and **Secret access key**. Copy these and save them in a secure location. You will not be able to see the secret key again.
+
+#### Backend and Credential Configuration
+
+1.  **Configure Backend**: Edit `terraform/backend.tf` and set the `bucket` to the name of the S3 bucket you created.
+
+2.  **Set Credentials**: Provide your S3 credentials.
+    -   **Locally**: Export the Access Key ID and Secret Access Key you saved as environment variables.
+
+        ```bash
+        export AWS_ACCESS_KEY_ID="your-s3-access-key"
+        export AWS_SECRET_ACCESS_KEY="your-s3-secret-key"
+        ```
+
+    -   **In CI/CD**: Add `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` to your GitHub repository secrets.
 
 ### 3. Configure Your First Environment
 
