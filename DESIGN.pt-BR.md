@@ -46,10 +46,10 @@ O `Makefile` é o ponto de entrada principal para todas as operações. Ele é c
 
 Para gerenciar múltiplos ambientes com segurança, seus estados do Terraform devem ser completamente isolados.
 
--   **Implementação**: Usamos um **backend local** com um caminho dinâmico para cada ambiente.
-    -   O backend é explicitamente configurado como `"local"` dentro do bloco `terraform {}` em `terraform/main.tf`.
-    -   O `Makefile` fornece dinamicamente o caminho do arquivo de estado durante a inicialização: `terraform init -backend-config="path=../environments/$(ENV)/terraform.tfstate"`.
--   **Justificativa da Decisão**: Esta abordagem é destinada para fins de desenvolvimento, pois simplifica a configuração inicial ao evitar a necessidade de configurar armazenamento de estado remoto e gerenciar credenciais. Para cenários de produção, o armazenamento de estado deve ser orquestrado por meio de um pipeline de CI/CD.
+-   **Implementação**: Usamos um **backend S3 com uma chave dinâmica**.
+    -   O arquivo `terraform/backend.tf` configura o bucket S3. Este arquivo é separado do `main.tf` para tornar a lógica principal mais facilmente mesclável ao puxar atualizações do template.
+    -   O `Makefile` fornece dinamicamente o caminho do arquivo de estado durante a inicialização: `terraform init -backend-config="key=env/$(ENV)/terraform.tfstate"`.
+-   **Justificativa da Decisão**: Esta abordagem foi escolhida em detrimento dos Workspaces do Terraform. Embora os workspaces sejam funcionais, usar caminhos de arquivo de estado distintos é mais explícito e transparente. Um engenheiro pode ver os arquivos de estado diretamente no bucket S3, o que torna a depuração e a inspeção manual mais simples e menos propensas a erros.
 
 ## 3. Gerenciamento de Chaves SSH (Totalmente Automatizado)
 

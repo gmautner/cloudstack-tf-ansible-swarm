@@ -46,10 +46,10 @@ The `Makefile` is the primary entrypoint for all operations. It is environment-a
 
 To manage multiple environments safely, their Terraform states must be completely isolated.
 
--   **Implementation**: We use a **local backend** with a dynamic path for each environment.
-    -   The backend is explicitly configured as `"local"` inside the `terraform {}` block in `terraform/main.tf`.
-    -   The `Makefile` dynamically provides the state file path during initialization: `terraform init -backend-config="path=../environments/$(ENV)/terraform.tfstate"`.
--   **Decision Rationale**: This approach is meant for development purposes, as it simplifies the initial setup by avoiding the need to configure remote state storage and manage credentials. For production scenarios, state storage should be orchestrated through a CI/CD pipeline.
+-   **Implementation**: We use an **S3 backend with a dynamic key**.
+    -   The `terraform/backend.tf` file configures the S3 bucket. This file is separate from `main.tf` to make the core logic more easily mergeable when pulling updates from the template.
+    -   The `Makefile` dynamically provides the state file path during initialization: `terraform init -backend-config="key=env/$(ENV)/terraform.tfstate"`.
+-   **Decision Rationale**: This approach was chosen over Terraform Workspaces. While workspaces are functional, using distinct state file paths is more explicit and transparent. An engineer can see the state files directly in the S3 bucket, which makes debugging and manual inspection simpler and less error-prone.
 
 ## 3. SSH Key Management (Fully Automated)
 
