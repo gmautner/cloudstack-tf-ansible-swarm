@@ -102,14 +102,14 @@ services:
       - nextcloud_network
 ```
 
-Then, add the following labels to the service, using the externally provided variable `domain_suffix` to set the domain name which will be templated by Jinja2:
+Then, add the following labels to the service, using the externally provided variable `DOMAIN_SUFFIX` to set the domain name which will be templated by Ansible:
 
 ```yaml
 services:
   nextcloud:
       labels:
         - traefik.enable=true
-        - traefik.http.routers.nextcloud.rule=Host(`nextcloud.{{ domain_suffix }}`)
+        - traefik.http.routers.nextcloud.rule=Host(`nextcloud.${DOMAIN_SUFFIX}`)
         - traefik.http.routers.nextcloud.entrypoints=websecure
         - traefik.http.routers.nextcloud.tls.certresolver=letsencrypt
         - traefik.http.services.nextcloud.loadbalancer.server.port=80
