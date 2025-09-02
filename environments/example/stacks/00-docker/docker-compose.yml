@@ -5,6 +5,7 @@ networks:
     name: socket_network
     driver: overlay
 
+# Serviço usado por Traefik e Prometheus para acessar a API do Swarm a partir de outro node.
 services:
   docker-socket-proxy:
     image: linuxserver/socket-proxy:3.2.3
