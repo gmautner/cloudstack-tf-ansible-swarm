@@ -46,10 +46,10 @@ O `Makefile` é o ponto de entrada principal para todas as operações. Ele é c
 
 Para gerenciar múltiplos ambientes com segurança, seus estados do Terraform devem ser completamente isolados.
 
--   **Implementação**: Usamos um **backend S3 com uma chave dinâmica**.
-    -   O arquivo `terraform/backend.tf` configura o bucket S3. Este arquivo é separado do `main.tf` para tornar a lógica principal mais facilmente mesclável ao puxar atualizações do template.
-    -   O `Makefile` fornece dinamicamente o caminho do arquivo de estado durante a inicialização: `terraform init -backend-config="key=env/$(ENV)/terraform.tfstate"`.
--   **Justificativa da Decisão**: Esta abordagem foi escolhida em detrimento dos Workspaces do Terraform. Embora os workspaces sejam funcionais, usar caminhos de arquivo de estado distintos é mais explícito e transparente. Um engenheiro pode ver os arquivos de estado diretamente no bucket S3, o que torna a depuração e a inspeção manual mais simples e menos propensas a erros.
+-   **Implementação**: Usamos um **backend local** com um caminho dinâmico para cada ambiente.
+    -   O backend é explicitamente configurado como `"local"` dentro do bloco `terraform {}` em `terraform/main.tf`.
+    -   O `Makefile` fornece dinamicamente o caminho do arquivo de estado durante a inicialização: `terraform init -backend-config="path=../environments/$(ENV)/terraform.tfstate"`.
+-   **Justificativa da Decisão**: Esta abordagem é destinada para fins de desenvolvimento, pois simplifica a configuração inicial ao evitar a necessidade de configurar armazenamento de estado remoto e gerenciar credenciais. Para cenários de produção, o armazenamento de estado deve ser orquestrado por meio de um pipeline de CI/CD.
 
 ## 3. Gerenciamento de Chaves SSH (Totalmente Automatizado)
 
@@ -69,19 +69,25 @@ A configuração do Ansible é projetada para ser genérica e adaptável a qualq
 -   **Inventário Específico do Ambiente**: O Terraform gera um arquivo de inventário único para cada ambiente (ex: `environments/dev/inventory.yml`). O `Makefile` passa o caminho correto do inventário para o Ansible usando a flag `-i`. A configuração padrão de `inventory` no `ansible.cfg` foi explicitamente removida para evitar confusão.
 -   **Caminhos de Configuração Dinâmicos**: O playbook em si não contém caminhos de configuração fixos. Os caminhos para o `secrets.yaml` e o diretório `stacks` são passados como variáveis pelo `Makefile` (`--extra-vars`).
     -   **Justificativa da Decisão**: Isso foi escolhido em vez de usar links simbólicos. Links simbólicos criariam um processo "mágico" e com estado, onde o conteúdo de `ansible/stacks` mudaria. Passar caminhos explícitos é sem estado, mais claro e torna o comportamento do playbook mais fácil de rastrear.
--   **Templating do Docker Compose**:
-    -   Todos os arquivos `docker-compose.yml` são tratados como templates Jinja2 (`.yml.j2`).
-    -   Isso permite que variáveis específicas do ambiente do Ansible (como `domain_suffix`) sejam injetadas nos arquivos do Compose antes da implantação.
-    -   O playbook contém uma tarefa que renderiza esses templates no nó de destino, removendo a extensão `.j2` antes de passar o arquivo final para o `docker stack deploy`.
+-   **Docker Compose com Variáveis de Ambiente**:
+    -   O projeto utiliza arquivos `docker-compose.yml` padrão, sem um motor de templates.
+    -   Valores específicos do ambiente (como `domain_suffix`) são injetados usando a substituição de variáveis de ambiente padrão do Docker Compose (ex: `${DOMAIN_SUFFIX}`).
+    -   O playbook do Ansible, ao executar `community.docker.docker_stack`, passa essas variáveis para o ambiente onde os arquivos do Compose são executados.
+    -   **Justificativa da Decisão**: Este método está alinhado com as práticas padrão do Docker e elimina uma camada de abstração, tornando os arquivos do Compose imediatamente utilizáveis com `docker-compose` localmente para testes. Também simplifica o playbook do Ansible, que não precisa mais de uma etapa separada de templating.
 
 ## 5. Gerenciamento de Segredos
 
-O fluxo de trabalho de segredos é projetado para ser seguro e amigável para CI/CD.
+O fluxo de trabalho de segredos é projetado para ser seguro e flexível, aproveitando o gerenciamento de segredos nativo do Docker Swarm.
 
--   **Manifesto no Git**: O arquivo `secrets.yaml` para cada ambiente atua como um **manifesto**. Ele lista os segredos necessários, mas não contém seus valores. Este arquivo é commitado com segurança no controle de versão.
--   **Valores do Ambiente**: Os valores reais dos segredos são carregados em tempo de execução a partir de variáveis de ambiente (para comandos `make` locais) ou do armazenamento de segredos da plataforma de CI/CD.
--   **Integração com CI/CD**: O workflow do GitHub Actions passa *todo* o contexto de segredos do GitHub para o comando `ansible-playbook` como um único objeto JSON (`--extra-vars "secrets_context=..."`). O playbook do Ansible então procura os valores de que precisa neste objeto, com base no manifesto.
-    -   **Justificativa da Decisão**: Este é um padrão limpo e genérico. Evita fixar nomes de segredos específicos do usuário no arquivo de workflow de CI, tornando o próprio workflow um template reutilizável.
+-   **Declaração de Segredos no Compose**: As definições dos segredos são declaradas diretamente dentro do arquivo `docker-compose.yml` de cada stack, sob a chave de nível superior `secrets:`. Isso serve como o manifesto de segredos necessários para uma stack.
+-   **Valores de um Arquivo Central**: Os valores reais dos segredos são carregados em tempo de execução a partir de um único arquivo `secrets.yaml` específico do ambiente (ex: `environments/dev/secrets.yaml`).
+-   **Orquestração do Ansible**: O playbook do Ansible é responsável por:
+    1.  Encontrar todos os arquivos `docker-compose.yml` para construir uma lista completa de todos os nomes de segredos declarados.
+    2.  Verificar se o arquivo `secrets.yaml` existe e tem permissões seguras (`600`).
+    3.  Carregar os valores do arquivo `secrets.yaml`.
+    4.  Usar o módulo `community.docker.docker_secret` para criar ou atualizar cada segredo no Docker Swarm.
+-   **Integração com CI/CD**: Para CI/CD, os valores dos segredos podem ser passados diretamente para o playbook como uma variável extra (`secrets_context`), contornando a necessidade do arquivo `secrets.yaml` no runner.
+    -   **Justificativa da Decisão**: Este padrão é robusto e seguro. Ele desacopla a *declaração* de um segredo (no arquivo compose) de seu *valor* (no `secrets.yaml` ou no cofre de CI/CD). Ele aproveita o tratamento nativo de segredos do Docker e impõe boas práticas de segurança, verificando as permissões do arquivo.
 
 ## 6. Pipeline de CI/CD
 

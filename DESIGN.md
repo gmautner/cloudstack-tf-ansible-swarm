@@ -46,10 +46,10 @@ The `Makefile` is the primary entrypoint for all operations. It is environment-a
 
 To manage multiple environments safely, their Terraform states must be completely isolated.
 
--   **Implementation**: We use an **S3 backend with a dynamic key**.
-    -   The `terraform/backend.tf` file configures the S3 bucket. This file is separate from `main.tf` to make the core logic more easily mergeable when pulling updates from the template.
-    -   The `Makefile` dynamically provides the state file path during initialization: `terraform init -backend-config="key=env/$(ENV)/terraform.tfstate"`.
--   **Decision Rationale**: This approach was chosen over Terraform Workspaces. While workspaces are functional, using distinct state file paths is more explicit and transparent. An engineer can see the state files directly in the S3 bucket, which makes debugging and manual inspection simpler and less error-prone.
+-   **Implementation**: We use a **local backend** with a dynamic path for each environment.
+    -   The backend is explicitly configured as `"local"` inside the `terraform {}` block in `terraform/main.tf`.
+    -   The `Makefile` dynamically provides the state file path during initialization: `terraform init -backend-config="path=../environments/$(ENV)/terraform.tfstate"`.
+-   **Decision Rationale**: This approach is meant for development purposes, as it simplifies the initial setup by avoiding the need to configure remote state storage and manage credentials. For production scenarios, state storage should be orchestrated through a CI/CD pipeline.
 
 ## 3. SSH Key Management (Fully Automated)
 
@@ -69,19 +69,25 @@ The Ansible setup is designed to be generic and adaptable to any environment.
 -   **Environment-Specific Inventory**: Terraform generates a unique inventory file for each environment (e.g., `environments/dev/inventory.yml`). The `Makefile` passes the correct inventory path to Ansible using the `-i` flag. The default `inventory` setting in `ansible.cfg` was explicitly removed to avoid confusion.
 -   **Dynamic Configuration Paths**: The playbook itself does not contain hardcoded paths to configuration. The paths to the `secrets.yaml` and `stacks` directory are passed in as variables from the `Makefile` (`--extra-vars`).
     -   **Decision Rationale**: This was chosen over using symlinks. Symlinks would create a "magical" and stateful process where the contents of `ansible/stacks` would change. Passing explicit paths is stateless, clearer, and makes the playbook's behavior easier to trace.
--   **Docker Compose Templating**:
-    -   All `docker-compose.yml` files are treated as Jinja2 templates (`.yml.j2`).
-    -   This allows environment-specific variables from Ansible (like `domain_suffix`) to be injected into the Compose files before deployment.
-    -   The playbook contains a task that renders these templates on the target node, stripping the `.j2` extension before passing the final file to `docker stack deploy`.
+-   **Docker Compose with Environment Variables**:
+    -   The project uses standard `docker-compose.yml` files without a templating engine.
+    -   Environment-specific values (like `domain_suffix`) are injected using standard Docker Compose environment variable substitution (e.g., `${DOMAIN_SUFFIX}`).
+    -   The Ansible playbook, when running `community.docker.docker_stack`, passes these variables into the environment where the compose files are executed.
+    -   **Decision Rationale**: This method aligns with standard Docker practices and eliminates a layer of abstraction, making the Compose files immediately usable with `docker-compose` locally for testing. It also simplifies the Ansible playbook, as it no longer needs a separate templating step.
 
 ## 5. Secrets Management
 
-The secrets workflow is designed to be both secure and CI/CD-friendly.
+The secrets workflow is designed to be secure and flexible, leveraging Docker Swarm's native secret management.
 
--   **Manifest in Git**: The `secrets.yaml` file for each environment acts as a **manifest**. It lists the secrets that are required but does not contain their values. This file is safely committed to version control.
--   **Values from Environment**: The actual secret values are loaded at runtime from environment variables (for local `make` commands) or from the CI/CD platform's secret store.
--   **CI/CD Integration**: The GitHub Actions workflow passes the *entire* GitHub `secrets` context to the `ansible-playbook` command as a single JSON object (`--extra-vars "secrets_context=..."`). The Ansible playbook then looks up the values it needs from this object, based on the manifest.
-    -   **Decision Rationale**: This is a clean, generic pattern. It avoids hardcoding any user-specific secret names in the CI workflow file, making the workflow itself a reusable template.
+-   **Secret Declaration in Compose**: Secret definitions are declared directly within each stack's `docker-compose.yml` file under the top-level `secrets:` key. This serves as the manifest of required secrets for a stack.
+-   **Values from a Central File**: The actual secret values are loaded at runtime from a single, environment-specific `secrets.yaml` file (e.g., `environments/dev/secrets.yaml`).
+-   **Ansible Orchestration**: The Ansible playbook is responsible for:
+    1.  Finding all `docker-compose.yml` files to build a complete list of all declared secret names.
+    2.  Verifying that the `secrets.yaml` file exists and has secure permissions (`600`).
+    3.  Loading the values from the `secrets.yaml` file.
+    4.  Using the `community.docker.docker_secret` module to create or update each secret in Docker Swarm.
+-   **CI/CD Integration**: For CI/CD, the secret values can be passed directly to the playbook as an extra variable (`secrets_context`), bypassing the need for the `secrets.yaml` file on the runner.
+    -   **Decision Rationale**: This pattern is robust and secure. It decouples the *declaration* of a secret (in the compose file) from its *value* (in the `secrets.yaml` or CI/CD store). It leverages Docker's native secret handling and enforces good security practice by checking file permissions.
 
 ## 6. CI/CD Pipeline
 
