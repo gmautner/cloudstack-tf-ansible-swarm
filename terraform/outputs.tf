@@ -12,6 +12,18 @@ output "service_public_ips" {
   }
 }
 
+# Output Traefik IP specifically for DNS configuration
+output "traefik_ip" {
+  description = "Public IP address for Traefik load balancer (use for DNS wildcard record)"
+  value       = lookup(cloudstack_ipaddress.public_ips, "traefik", null) != null ? cloudstack_ipaddress.public_ips["traefik"].ip_address : null
+}
+
+# Output domain suffix for DNS configuration
+output "domain_suffix" {
+  description = "Domain suffix for the environment (use for DNS wildcard record)"
+  value       = local.domain_suffix
+}
+
 
 
 # Output calculated manager service offering
