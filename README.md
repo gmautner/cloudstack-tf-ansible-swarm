@@ -159,6 +159,8 @@ Let's configure a new environment called `dev`.
    MySQL_root_Password: "your-password"  # ✗ Wrong
    ```
 
+   **Example file:** `environments/example/secrets.yaml.example`
+
 4. **Define workers**: Edit the `environments/dev/terraform.tfvars` file to provision infrastructure resources for the services defined in the `docker-compose.yml` stack files.
 
    For example, if the stack has the constraint `node.hostname == mongo1`, add the following to the `terraform.tfvars` file:
