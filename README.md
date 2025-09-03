@@ -9,10 +9,9 @@
         - [Create an IAM User](#create-an-iam-user)
         - [Create and Attach IAM Policy](#create-and-attach-iam-policy)
         - [Save User Credentials](#save-user-credentials)
-      - [Backend and Credential Configuration](#backend-and-credential-configuration)
-        - [Configure Backend](#configure-backend)
     - [Configure Your First Environment](#configure-your-first-environment)
       - [Customize Terraform Variables](#customize-terraform-variables)
+      - [Configure Backend](#configure-backend)
       - [Define Application Stacks](#define-application-stacks)
       - [Define Application Secrets](#define-application-secrets)
       - [Define workers](#define-workers)
@@ -77,6 +76,8 @@ This repository provides a template for deploying multiple, environment-specific
 - Terraform >= 1.0
 - Ansible >= 2.10
 - CloudStack API Credentials & SSH Key Pair
+- An AWS account
+- A [Slack webhook](https://docs.slack.dev/messaging/sending-messages-using-incoming-webhooks/) for receiving alerts
 
 ### Configure S3 Backend
 
@@ -126,12 +127,6 @@ This template uses an S3 bucket to store the Terraform state.
 - Complete the user creation process.
 - On the summary screen, click on **Create access key** with use case **Command Line Interface (CLI)**. This will show you the **Access key** and **Secret access key**. Copy these and save them in a secure location.
 
-#### Backend and Credential Configuration
-
-##### Configure Backend
-
-Edit `terraform/backend.tf` and set the `bucket` to the name of the S3 bucket you created and the `region` to match your bucket's AWS region.
-
 ### Configure Your First Environment
 
 Let's configure a new environment called `dev`.
@@ -139,6 +134,10 @@ Let's configure a new environment called `dev`.
 #### Customize Terraform Variables
 
 Copy `environments/example/terraform.tfvars` to `environments/dev/terraform.tfvars` and customize it with your settings, including a unique `cluster_name` and a `base_domain`.
+
+#### Configure Backend
+
+Edit `terraform/backend.tf` and set the `bucket` to the name of the S3 bucket you created and the `region` to match your bucket's AWS region.
 
 #### Define Application Stacks
 
