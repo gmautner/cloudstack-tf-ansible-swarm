@@ -10,11 +10,10 @@
     - [Prerequisites](#prerequisites)
     - [Fork this repository](#fork-this-repository)
     - [Configure S3 Backend](#configure-s3-backend)
-      - [Bucket and IAM Policy Setup](#bucket-and-iam-policy-setup)
-        - [Create an S3 Bucket](#create-an-s3-bucket)
-        - [Create an IAM User](#create-an-iam-user)
-        - [Create and Attach IAM Policy](#create-and-attach-iam-policy)
-        - [Save User Credentials](#save-user-credentials)
+      - [Create an S3 Bucket](#create-an-s3-bucket)
+      - [Create an IAM User](#create-an-iam-user)
+      - [Create and Attach IAM Policy](#create-and-attach-iam-policy)
+      - [Save User Credentials](#save-user-credentials)
     - [Configure Your First Environment](#configure-your-first-environment)
       - [Customize Terraform Variables](#customize-terraform-variables)
       - [Configure Backend](#configure-backend)
@@ -93,21 +92,19 @@ Fork this repository to your own GitHub account.
 
 This template uses an S3 bucket to store the Terraform state.
 
-#### Bucket and IAM Policy Setup
-
-##### Create an S3 Bucket
+#### Create an S3 Bucket
 
 - Navigate to the S3 service.
 - Create a new, private S3 bucket, accepting default settings. Choose a globally unique name (e.g., `your-company-terraform-states`).
 - Take note of the bucket name and region.
 
-##### Create an IAM User
+#### Create an IAM User
 
 - Navigate to the IAM service.
 - Create a new user. Give it a descriptive name (e.g., `terraform-s3-backend-user`).
 - In "Set permissions", select **Attach policies directly**, then click **Create policy**.
 
-##### Create and Attach IAM Policy
+#### Create and Attach IAM Policy
 
 - Go to the **JSON** tab and paste the following policy. Replace `your-company-terraform-states` with the name of the bucket you just created.
 
@@ -132,7 +129,7 @@ This template uses an S3 bucket to store the Terraform state.
 - Review and create the policy. Give it a descriptive name (e.g., `TerraformS3BackendAccess`).
 - Go back to the user creation screen, refresh the policy list, and attach your newly created policy to the user.
 
-##### Save User Credentials
+#### Save User Credentials
 
 - Complete the user creation process.
 - On the summary screen, click on **Create access key** with use case **Command Line Interface (CLI)**. This will show you the **Access key** and **Secret access key**. Copy these and save them in a secure location.
