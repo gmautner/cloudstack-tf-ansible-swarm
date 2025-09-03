@@ -78,6 +78,7 @@ This repository provides a template for deploying multiple, environment-specific
 - CloudStack API Credentials & SSH Key Pair
 - An AWS account
 - A [Slack webhook](https://docs.slack.dev/messaging/sending-messages-using-incoming-webhooks/) for receiving alerts
+- A DNS Zone that you can manage, for creating DNS records for your cluster, e.g. `infra.example.com`
 
 ### Configure S3 Backend
 
