@@ -29,7 +29,7 @@
       - [Add Repository-Level Secrets](#add-repository-level-secrets)
       - [Add Environment-Specific Secrets](#add-environment-specific-secrets)
     - [Running the Workflow](#running-the-workflow)
-  - [Makefile Commands](#makefile-commands)
+  - [Example Makefile Commands](#example-makefile-commands)
 
 This repository provides a template for deploying multiple, environment-specific Docker Swarm clusters on CloudStack using Terraform and Ansible.
 
@@ -356,10 +356,11 @@ For each environment you created, add the application-specific secrets discovere
 
 The pipeline will deploy the selected environment using the secrets you've configured for that specific GitHub Environment.
 
-## Makefile Commands
+## Example Makefile Commands
 
+- `make deploy`: Deploy the `dev` environment.
 - `make deploy ENV=prod`: Deploy the `prod` environment.
 - `make plan ENV=prod`: Show the Terraform execution plan for the `prod` environment.
 - `make destroy ENV=prod`: Destroy the `prod` environment.
-- `make ssh PORT=22010`: SSH into the node with port 22010 (see the generated `environments/<dev>/inventory.yml` for reference).
-- `make ssh ENV=prod`: SSH into the first manager of the `prod` environment.
+- `make ssh`: SSH into the first manager of the `dev` environment.
+- `make ssh ENV=prod PORT=22010`: SSH into the node with port `22010` of the `prod` environment (see the generated `environments/prod/inventory.yml` for mapping between ports and nodes).
