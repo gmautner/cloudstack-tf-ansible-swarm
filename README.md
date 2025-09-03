@@ -17,6 +17,7 @@
       - [Define workers](#define-workers)
       - [Set Infrastructure Credentials (Local)](#set-infrastructure-credentials-local)
     - [Deploy](#deploy)
+    - [Configure DNS After Deployment](#configure-dns-after-deployment)
   - [CI/CD with GitHub Actions](#cicd-with-github-actions)
     - [Configuration](#configuration)
       - [Create Environments](#create-environments)
@@ -269,6 +270,43 @@ make deploy ENV=prod
 ```
 
 This command will automatically use the correct S3 state file path and configuration files for the specified environment.
+
+### Configure DNS After Deployment
+
+After your Terraform deployment completes successfully, you'll need to configure DNS records to make your services accessible. Terraform will output the necessary information:
+
+```bash
+# View the deployment instructions
+terraform output deployment_instructions
+
+# Or get specific values
+terraform output traefik_ip
+terraform output domain_suffix
+```
+
+**Required DNS Configuration:**
+
+**Create a wildcard DNS A record** for your environment:
+
+- **Record Type**: A
+- **Name**: `*.{domain_suffix}` (e.g., `*.dev.cluster-1.infra.example.com`)
+- **Value**: The Traefik IP address from the terraform output
+
+- **Example DNS record:**
+
+  ```text
+  *.dev.cluster-1.infra.example.com  →  203.0.113.45
+  ```
+
+Once DNS is configured, your services will be accessible at:
+
+- **Traefik Dashboard**: `https://traefik.{domain_suffix}`
+- **Grafana Dashboard**: `https://grafana.{domain_suffix}`
+- **Prometheus**: `https://prometheus.{domain_suffix}`
+- **Alertmanager**: `https://alertmanager.{domain_suffix}`
+- **Other services**: `https://{service-name}.{domain_suffix}`
+
+> 💡 **Remark**: DNS propagation can take a few minutes. You can test if DNS is working by running `nslookup traefik.{domain_suffix}` and verifying it returns the correct IP address.
 
 ## CI/CD with GitHub Actions
 
