@@ -1,3 +1,31 @@
+- [CloudStack Terraform \& Ansible Swarm Template](#cloudstack-terraform--ansible-swarm-template)
+  - [Features](#features)
+  - [Project Structure](#project-structure)
+  - [Quick Start](#quick-start)
+    - [Prerequisites](#prerequisites)
+    - [Configure S3 Backend](#configure-s3-backend)
+      - [Bucket and IAM Policy Setup](#bucket-and-iam-policy-setup)
+        - [Create an S3 Bucket](#create-an-s3-bucket)
+        - [Create an IAM User](#create-an-iam-user)
+        - [Create and Attach IAM Policy](#create-and-attach-iam-policy)
+        - [Save User Credentials](#save-user-credentials)
+      - [Backend and Credential Configuration](#backend-and-credential-configuration)
+        - [Configure Backend](#configure-backend)
+    - [Configure Your First Environment](#configure-your-first-environment)
+      - [Customize Terraform Variables](#customize-terraform-variables)
+      - [Define Application Stacks](#define-application-stacks)
+      - [Define Application Secrets](#define-application-secrets)
+      - [Define workers](#define-workers)
+      - [Set Infrastructure Credentials (Local)](#set-infrastructure-credentials-local)
+    - [Deploy](#deploy)
+  - [CI/CD with GitHub Actions](#cicd-with-github-actions)
+    - [Configuration](#configuration)
+      - [Create Environments](#create-environments)
+      - [Add Repository-Level Secrets](#add-repository-level-secrets)
+      - [Add Environment-Specific Secrets](#add-environment-specific-secrets)
+    - [Running the Workflow](#running-the-workflow)
+  - [Makefile Commands](#makefile-commands)
+
 # CloudStack Terraform & Ansible Swarm Template
 
 This repository provides a template for deploying multiple, environment-specific Docker Swarm clusters on CloudStack using Terraform and Ansible.
@@ -38,187 +66,197 @@ This repository provides a template for deploying multiple, environment-specific
 ```
 
 - `environments/`: Contains all environment-specific configurations.
-  - `example/stacks/`: A collection of sample stacks to copy into your environments.
+- `example/stacks/`: A collection of sample stacks to copy into your environments.
 - `ansible/`: Contains the core, reusable Ansible playbook.
 - `terraform/`: Contains the core, reusable Terraform configuration.
 
 ## Quick Start
 
-### 1. Prerequisites
+### Prerequisites
 
 - Terraform >= 1.0
 - Ansible >= 2.10
 - CloudStack API Credentials & SSH Key Pair
 
-### 2. Configure S3 Backend
+### Configure S3 Backend
 
 This template uses an S3 bucket to store the Terraform state.
 
 #### Bucket and IAM Policy Setup
 
-1.  **Create an S3 Bucket**:
-    -   Navigate to the S3 service.
-    -   Create a new, private S3 bucket, accepting default settings. Choose a globally unique name (e.g., `your-company-terraform-states`).
-    -   Take note of the bucket name and region.
+##### Create an S3 Bucket
 
-2.  **Create an IAM User**:
-    -   Navigate to the IAM service.
-    -   Create a new user. Give it a descriptive name (e.g., `terraform-s3-backend-user`).
-    -   In "Set permissions", select **Attach policies directly**, then click **Create policy**.
+- Navigate to the S3 service.
+- Create a new, private S3 bucket, accepting default settings. Choose a globally unique name (e.g., `your-company-terraform-states`).
+- Take note of the bucket name and region.
 
-3.  **Create and Attach IAM Policy**:
-    -   Go to the **JSON** tab and paste the following policy. Replace `your-company-terraform-states` with the name of the bucket you just created.
+##### Create an IAM User
 
-        ```json
+- Navigate to the IAM service.
+- Create a new user. Give it a descriptive name (e.g., `terraform-s3-backend-user`).
+- In "Set permissions", select **Attach policies directly**, then click **Create policy**.
+
+##### Create and Attach IAM Policy
+
+- Go to the **JSON** tab and paste the following policy. Replace `your-company-terraform-states` with the name of the bucket you just created.
+
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
         {
-            "Version": "2012-10-17",
-            "Statement": [
-                {
-                    "Effect": "Allow",
-                    "Action": [
-                        "s3:*"
-                    ],
-                    "Resource": [
-                        "arn:aws:s3:::your-company-terraform-states",
-                        "arn:aws:s3:::your-company-terraform-states/*"
-                    ]
-                }
+            "Effect": "Allow",
+            "Action": [
+                "s3:*"
+            ],
+            "Resource": [
+                "arn:aws:s3:::your-company-terraform-states",
+                "arn:aws:s3:::your-company-terraform-states/*"
             ]
         }
-        ```
-    -   Review and create the policy. Give it a descriptive name (e.g., `TerraformS3BackendAccess`).
-    -   Go back to the user creation screen, refresh the policy list, and attach your newly created policy to the user.
+    ]
+}
+```
 
-4.  **Save User Credentials**:
-    -   Complete the user creation process.
-    -   On the summary screen, click on **Create access key** with use case **Command Line Interface (CLI)**. This will show you the **Access key** and **Secret access key**. Copy these and save them in a secure location.
+- Review and create the policy. Give it a descriptive name (e.g., `TerraformS3BackendAccess`).
+- Go back to the user creation screen, refresh the policy list, and attach your newly created policy to the user.
+
+##### Save User Credentials
+
+- Complete the user creation process.
+- On the summary screen, click on **Create access key** with use case **Command Line Interface (CLI)**. This will show you the **Access key** and **Secret access key**. Copy these and save them in a secure location.
 
 #### Backend and Credential Configuration
 
-1.  **Configure Backend**: Edit `terraform/backend.tf` and set the `bucket` to the name of the S3 bucket you created and the `region` to match your bucket's AWS region.
+##### Configure Backend
 
-2.  **Set Credentials**: Provide your S3 credentials.
-    -   **Locally**: Export the Access Key ID and Secret Access Key you saved as environment variables.
+Edit `terraform/backend.tf` and set the `bucket` to the name of the S3 bucket you created and the `region` to match your bucket's AWS region.
 
-        ```bash
-        export AWS_ACCESS_KEY_ID="your-s3-access-key"
-        export AWS_SECRET_ACCESS_KEY="your-s3-secret-key"
-        ```
-
-### 3. Configure Your First Environment
+### Configure Your First Environment
 
 Let's configure a new environment called `dev`.
 
-1. **Customize Terraform Variables**: Copy `environments/example/terraform.tfvars` to `environments/dev/terraform.tfvars` and customize it with your settings, including a unique `cluster_name` and a `base_domain`.
+#### Customize Terraform Variables
 
-2. **Define Application Stacks**: The `environments/dev/stacks/` directory determines which applications are deployed. Each stack lives in a separate directory with a Docker Swarm compatible `docker-compose.yml` file and other files referenced by it.
+Copy `environments/example/terraform.tfvars` to `environments/dev/terraform.tfvars` and customize it with your settings, including a unique `cluster_name` and a `base_domain`.
 
-   **Base Infrastructure Stacks (Required)**: Always copy the numbered stacks from `environments/example/stacks/` as they contain the essential base infrastructure for the cluster:
+#### Define Application Stacks
 
-    ```bash
-    # Copy base infrastructure stacks (required for cluster operation)
-    cp -r environments/example/stacks/00-socket-proxy environments/dev/stacks/
-    cp -r environments/example/stacks/01-traefik environments/dev/stacks/
-    cp -r environments/example/stacks/02-monitoring environments/dev/stacks/
-    ```
+The `environments/dev/stacks/` directory determines which applications are deployed. Each stack lives in a separate directory with a Docker Swarm compatible `docker-compose.yml` file and other files referenced by it.
 
-   **Application Stacks (Optional)**: The other stacks (kafka, wordpress, etc.) are examples to serve as inspiration for your own applications. You can use your own container images or any other externally provided ones:
+**Base Infrastructure Stacks (Required)**: Always copy the numbered stacks from `environments/example/stacks/` as they contain the essential base infrastructure for the cluster:
 
-    ```bash
-    # Example: Add optional application stacks
-    cp -r environments/example/stacks/portainer environments/dev/stacks/
-    cp -r environments/example/stacks/nextcloud-postgres-redis environments/dev/stacks/
-    ```
+```bash
+# Copy base infrastructure stacks (required for cluster operation)
+cp -r environments/example/stacks/00-socket-proxy environments/dev/stacks/
+cp -r environments/example/stacks/01-traefik environments/dev/stacks/
+cp -r environments/example/stacks/02-monitoring environments/dev/stacks/
+```
 
-   **Adapting or creating Docker Swarm Compose Files**: If you need to adapt existing Docker Compose files for use with Docker Swarm, or create new ones from scratch, refer to the [Docker Compose Guide](DOCKER-COMPOSE-GUIDE.md) file for detailed instructions. (Pro tip: Refer your AI assistant to the guide for instant Docker Swarm expertise! 🧠)
+**Application Stacks (Optional)**: The other stacks (kafka, wordpress, etc.) are examples to serve as inspiration for your own applications. You can use your own container images or any other externally provided ones:
 
-3. **Define Application Secrets**: The secrets required by your application stacks are automatically discovered from the `secrets:` block at the top level of each `docker-compose.yml` file.
+```bash
+# Example: Add optional application stacks
+cp -r environments/example/stacks/portainer environments/dev/stacks/
+cp -r environments/example/stacks/nextcloud-postgres-redis environments/dev/stacks/
+```
 
-   For local development, you must create an `environments/dev/secrets.yaml` file to provide the values for these secrets. This file is a simple key-value store. The file is ignored by Git, and the deployment playbook will fail if its permissions are not `600`.
+**Adapting or creating Docker Swarm Compose Files**: If you need to adapt existing Docker Compose files for use with Docker Swarm, or create new ones from scratch, refer to the [Docker Compose Guide](DOCKER-COMPOSE-GUIDE.md) file for detailed instructions. (Pro tip: Refer your AI assistant to the guide for instant Docker Swarm expertise! 🧠)
 
-   > Remark: in CI/CD, the secrets are passed directly to the playbook as environment-level secrets, bypassing the need for the `secrets.yaml` file (see more in the [CI/CD section](#cicd-with-github-actions)).
+#### Define Application Secrets
 
-   **Example `environments/dev/secrets.yaml`:**
-   ```yaml
-   mysql_root_password: "your-dev-db-password"
-   wordpress_db_password: "your-dev-wp-password"
-   ```
+The secrets required by your application stacks are automatically discovered from the `secrets:` block at the top level of each `docker-compose.yml` file.
 
-   **Important**: Always define secret names in lowercase, both in your stacks and in the `secrets.yaml` file.
+For local development, you must create an `environments/dev/secrets.yaml` file to provide the values for these secrets. This file is a simple key-value store. The file is ignored by Git, and the deployment playbook will fail if its permissions are not `600`.
 
-   **Correct naming:**
+> 💡 **Remark**: in CI/CD, the secrets are passed directly to the playbook as environment-level secrets, bypassing the need for the `secrets.yaml` file (see more in the [CI/CD section](#cicd-with-github-actions)).
 
-   ```yaml
-   mysql_root_password: "your-password"  # ✓ Correct
-   ```
+**Example `environments/dev/secrets.yaml`:**
 
-   **Incorrect naming:**
+```yaml
+mysql_root_password: "your-dev-db-password"
+wordpress_db_password: "your-dev-wp-password"
+```
 
-   ```yaml
-   MYSQL_ROOT_PASSWORD: "your-password"  # ✗ Wrong
-   MySQL_root_Password: "your-password"  # ✗ Wrong
-   ```
+> ⚠️ **Important**: Always define secret names in lowercase, both in your stacks and in the `secrets.yaml` file.
 
-   **Example file:** `environments/example/secrets.yaml.example`
+**Correct naming:**
 
-4. **Define workers**: Edit the `environments/dev/terraform.tfvars` file to provision infrastructure resources for the services defined in the `docker-compose.yml` stack files.
+```yaml
+mysql_root_password: "your-password"  # ✓ Correct
+```
 
-   For example, if the stack has the constraint `node.hostname == mongo1`, add the following to the `terraform.tfvars` file:
+**Incorrect naming:**
 
-   ```hcl
-   ...
-     "mongo1" = {
-       plan         = "small",
-       data_size_gb = 40
-     },
-   ...
-   ```
+```yaml
+MYSQL_ROOT_PASSWORD: "your-password"  # ✗ Wrong
+MySQL_root_Password: "your-password"  # ✗ Wrong
+```
 
-   If a pool label is used, like in the constraint `node.labels.pool == myapp`, add the following to the `terraform.tfvars` file, matching the number of replicas required by the service to the number of nodes in the pool:
+**Example file:** `environments/example/secrets.yaml.example`
 
-   ```hcl
-   ...
-     "myapp-1" = {
-       plan         = "small",
-       data_size_gb = 40
-       labels = {
-         "pool" = "myapp"
-       }
-     },
-     "myapp-2" = {
-       plan         = "small",
-       data_size_gb = 40
-       labels = {
-         "pool" = "myapp"
-       }
-     },
-   ...
-   ```
+#### Define workers
 
-5. **Set Infrastructure Credentials (Local)**: For local deployments, provide your infrastructure credentials as environment variables. Application secrets should be placed in the `secrets.yaml` file as described above.
+Edit the `environments/dev/terraform.tfvars` file to provision infrastructure resources for the services defined in the `docker-compose.yml` stack files.
 
-    - **Locally**: Export infrastructure credentials as environment variables.
+For example, if the stack has the constraint `node.hostname == mongo1`, add the following to the `terraform.tfvars` file:
 
-      ```bash
-      # Infrastructure Credentials
-      export CLOUDSTACK_API_URL="..."
-      export CLOUDSTACK_API_KEY="..."
-      export CLOUDSTACK_SECRET_KEY="..."
-      export AWS_ACCESS_KEY_ID="..."
-      export AWS_SECRET_ACCESS_KEY="..."
-      ```
+```hcl
+...
+  "mongo1" = {
+    plan         = "small",
+    data_size_gb = 40
+  },
+...
+```
 
-      For private container registries, you can also optionally provide your credentials:
+If a pool label is used, like in the constraint `node.labels.pool == myapp`, add the following to the `terraform.tfvars` file, matching the number of replicas required by the service to the number of nodes in the pool:
 
-      ```bash
-      export DOCKER_REGISTRY_URL="your-registry-url"
-      export DOCKER_REGISTRY_USERNAME="your-username"
-      export DOCKER_REGISTRY_PASSWORD="your-password-or-token"
-      ```
+```hcl
+...
+  "myapp-1" = {
+    plan         = "small",
+    data_size_gb = 40
+    labels = {
+      "pool" = "myapp"
+    }
+  },
+  "myapp-2" = {
+    plan         = "small",
+    data_size_gb = 40
+    labels = {
+      "pool" = "myapp"
+    }
+  },
+...
+```
 
-      > Remark: in CI/CD, the infrastructure credentials are passed directly to the playbook as repository-level variables, bypassing the need for exporting them locally (see more in the [CI/CD section](#cicd-with-github-actions)).
+#### Set Infrastructure Credentials (Local)
 
-### 4. Deploy
+For local deployments, provide your infrastructure credentials as environment variables. Application secrets should be placed in the `secrets.yaml` file as described above.
+
+- **Locally**: Export infrastructure credentials as environment variables.
+
+```bash
+# Infrastructure Credentials
+export CLOUDSTACK_API_URL="..."
+export CLOUDSTACK_API_KEY="..."
+export CLOUDSTACK_SECRET_KEY="..."
+export AWS_ACCESS_KEY_ID="..."
+export AWS_SECRET_ACCESS_KEY="..."
+```
+
+For private container registries, you can also optionally provide your credentials:
+
+```bash
+export DOCKER_REGISTRY_URL="your-registry-url"
+export DOCKER_REGISTRY_USERNAME="your-username"
+export DOCKER_REGISTRY_PASSWORD="your-password-or-token"
+```
+
+> 💡 **Remark**: in CI/CD, the infrastructure credentials are passed directly to the playbook as repository-level variables, bypassing the need for exporting them locally (see more in the [CI/CD section](#cicd-with-github-actions)).
+
+### Deploy
 
 Use the `Makefile` to deploy your environment. The `ENV` variable specifies which environment to target. It defaults to `dev`.
 
@@ -236,36 +274,44 @@ This command will automatically use the correct S3 state file path and configura
 
 This project uses GitHub Actions to automate deployments. The workflow is configured to use **GitHub Environments**, which allows you to define distinct sets of secrets for each of your environments (e.g., `dev`, `prod`).
 
-**⚠️ Important**: GitHub Environments are only available for public repositories or private repositories on paid GitHub plans (Pro, Team, or Enterprise). If you're using a free GitHub plan with a private repository, you'll need to make your repository public to use environments. This shouldn't be a security concern as your secrets remain protected and are not accessible through the public repository.
+> ⚠️ **Important**: GitHub Environments are only available for public repositories or private repositories on paid GitHub plans (Pro, Team, or Enterprise). If you're using a free GitHub plan with a private repository, you'll need to make your repository public to use environments. This shouldn't be a security concern as your secrets remain protected and are not accessible through the public repository.
 
 ### Configuration
 
-1.  **Create Environments**: In your GitHub repository, go to **Settings > Environments**. Create an environment for each of your deployment targets (e.g., `dev`, `prod`). The names must match the directory names under `environments/`.
+#### Create Environments
 
-2.  **Add Repository-Level Secrets**: Go to **Settings > Secrets and variables > Actions** and add the infrastructure credentials as repository secrets. These are shared across all environments:
+In your GitHub repository, go to **Settings > Environments**. Create an environment for each of your deployment targets (e.g., `dev`, `prod`). The names must match the directory names under `environments/`.
 
-    **Required Repository Secrets:**
-    -   `CLOUDSTACK_API_URL`
-    -   `CLOUDSTACK_API_KEY`
-    -   `CLOUDSTACK_SECRET_KEY`
-    -   `AWS_ACCESS_KEY_ID`
-    -   `AWS_SECRET_ACCESS_KEY`
-    -   `DOCKER_REGISTRY_URL` (optional)
-    -   `DOCKER_REGISTRY_USERNAME` (optional)
-    -   `DOCKER_REGISTRY_PASSWORD` (optional)
+#### Add Repository-Level Secrets
 
-3.  **Add Environment-Specific Secrets**: For each environment you created, add the application-specific secrets discovered in your `docker-compose.yml` files.
+Go to **Settings > Secrets and variables > Actions** and add the infrastructure credentials as repository secrets. These are shared across all environments:
 
-    **Note**: GitHub will automatically convert secret names to uppercase in the UI, but the deployment process will convert them back to lowercase to match your `secrets.yaml` format. For example, if you define `mysql_root_password` in your stack, GitHub will display it as `MYSQL_ROOT_PASSWORD`, but it will be correctly applied as `mysql_root_password` during deployment.
+**Required Repository Secrets:**
 
-    **Environment Secrets (per environment):**
-    -   Any application secrets (e.g., `mysql_root_password`, `nextcloud_admin_password`, etc.)
+- `CLOUDSTACK_API_URL`
+- `CLOUDSTACK_API_KEY`
+- `CLOUDSTACK_SECRET_KEY`
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET_ACCESS_KEY`
+- `DOCKER_REGISTRY_URL` (optional)
+- `DOCKER_REGISTRY_USERNAME` (optional)
+- `DOCKER_REGISTRY_PASSWORD` (optional)
+
+#### Add Environment-Specific Secrets
+
+For each environment you created, add the application-specific secrets discovered in your `docker-compose.yml` files.
+
+**Note**: GitHub will automatically convert secret names to uppercase in the UI, but the deployment process will convert them back to lowercase to match your `secrets.yaml` format. For example, if you define `mysql_root_password` in your stack, GitHub will display it as `MYSQL_ROOT_PASSWORD`, but it will be correctly applied as `mysql_root_password` during deployment.
+
+**Environment Secrets (per environment):**
+
+- Any application secrets (e.g., `mysql_root_password`, `nextcloud_admin_password`, etc.)
 
 ### Running the Workflow
 
-1.  Go to the **Actions** tab in your GitHub repository.
-2.  Select the **Deploy Infrastructure** or **Destroy Infrastructure** workflow.
-3.  Click **Run workflow**, enter the name of the environment you wish to target, and click **Run workflow**.
+- Go to the **Actions** tab in your GitHub repository.
+- Select the **Deploy Infrastructure** or **Destroy Infrastructure** workflow.
+- Click **Run workflow**, enter the name of the environment you wish to target, and click **Run workflow**.
 
 The pipeline will deploy the selected environment using the secrets you've configured for that specific GitHub Environment.
 
