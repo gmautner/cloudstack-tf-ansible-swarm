@@ -33,10 +33,14 @@ workers = {
     plan         = "large",
     data_size_gb = 90
   },
+
+  # Workers for monitoring stack
   "monitoring" = {
     plan         = "large",
     data_size_gb = 100
   },
+
+  # Workers for echo stack
   "echo-1" = {
     plan         = "micro",
     data_size_gb = 10,

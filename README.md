@@ -114,7 +114,7 @@ Let's configure a new environment called `dev`.
 
 1. **Customize Terraform Variables**: Copy `environments/example/terraform.tfvars` to `environments/dev/terraform.tfvars` and customize it with your settings, including a unique `cluster_name` and a `base_domain`.
 
-2. **Define Application Stacks**: The `environments/dev/stacks/` directory determines which applications are deployed.
+2. **Define Application Stacks**: The `environments/dev/stacks/` directory determines which applications are deployed. Each stack lives in a separate directory with a Docker Swarm compatible `docker-compose.yml` file and other files referenced by it.
 
    **Base Infrastructure Stacks (Required)**: Always copy the numbered stacks from `environments/example/stacks/` as they contain the essential base infrastructure for the cluster:
 
@@ -133,11 +133,13 @@ Let's configure a new environment called `dev`.
     cp -r environments/example/stacks/nextcloud-postgres-redis environments/dev/stacks/
     ```
 
-   **Adapting Docker Compose Files**: If you need to adapt existing Docker Compose files for use with Docker Swarm, refer to the [Docker Compose Guide](DOCKER-COMPOSE-GUIDE.md) file for detailed conversion guidelines and best practices.
+   **Adapting or creating Docker Swarm Compose Files**: If you need to adapt existing Docker Compose files for use with Docker Swarm, or create new ones from scratch, refer to the [Docker Compose Guide](DOCKER-COMPOSE-GUIDE.md) file for detailed instructions. (Pro tip: Refer your AI assistant to the guide for instant Docker Swarm expertise! 🧠)
 
 3. **Define Application Secrets**: The secrets required by your application stacks are automatically discovered from the `secrets:` block at the top level of each `docker-compose.yml` file.
 
-   For local development, you must create a `environments/dev/secrets.yaml` file to provide the values for these secrets. This file is a simple key-value store. The file is ignored by Git, and the deployment playbook will fail if its permissions are not `600`.
+   For local development, you must create an `environments/dev/secrets.yaml` file to provide the values for these secrets. This file is a simple key-value store. The file is ignored by Git, and the deployment playbook will fail if its permissions are not `600`.
+
+   > Remark: in CI/CD, the secrets are passed directly to the playbook as environment-level secrets, bypassing the need for the `secrets.yaml` file (see more in the [CI/CD section](#cicd-with-github-actions)).
 
    **Example `environments/dev/secrets.yaml`:**
    ```yaml
@@ -160,7 +162,41 @@ Let's configure a new environment called `dev`.
    MySQL_root_Password: "your-password"  # ✗ Wrong
    ```
 
-4. **Set Infrastructure Credentials (Local)**: For local deployments, provide your infrastructure credentials as environment variables. Application secrets should be placed in the `secrets.yaml` file as described above.
+4. **Define workers**: Edit the `environments/dev/terraform.tfvars` file to provision infrastructure resources for the services defined in the `docker-compose.yml` stack files.
+
+   For example, if the stack has the constraint `node.hostname == mongo1`, add the following to the `terraform.tfvars` file:
+
+   ```hcl
+   ...
+     "mongo1" = {
+       plan         = "small",
+       data_size_gb = 40
+     },
+   ...
+   ```
+
+   If a pool label is used, like in the constraint `node.labels.pool == myapp`, add the following to the `terraform.tfvars` file, matching the number of replicas required by the service to the number of nodes in the pool:
+
+   ```hcl
+   ...
+     "myapp-1" = {
+       plan         = "small",
+       data_size_gb = 40
+       labels = {
+         "pool" = "myapp"
+       }
+     },
+     "myapp-2" = {
+       plan         = "small",
+       data_size_gb = 40
+       labels = {
+         "pool" = "myapp"
+       }
+     },
+   ...
+   ```
+
+5. **Set Infrastructure Credentials (Local)**: For local deployments, provide your infrastructure credentials as environment variables. Application secrets should be placed in the `secrets.yaml` file as described above.
 
     - **Locally**: Export infrastructure credentials as environment variables.
 
@@ -180,6 +216,8 @@ Let's configure a new environment called `dev`.
       export DOCKER_REGISTRY_USERNAME="your-username"
       export DOCKER_REGISTRY_PASSWORD="your-password-or-token"
       ```
+
+      > Remark: in CI/CD, the infrastructure credentials are passed directly to the playbook as repository-level variables, bypassing the need for exporting them locally (see more in the [CI/CD section](#cicd-with-github-actions)).
 
 ### 4. Deploy
 

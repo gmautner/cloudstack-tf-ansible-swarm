@@ -169,38 +169,3 @@ services:
         exec node main.js
 ```
 
-## External dependencies
-
-Look at the `terraform.tfvars` file in the same environment directory to see which external dependencies are required for the stack.
-
-For example, if the stack requires a MongoDB instance, add the following to the `terraform.tfvars` file:
-
-```hcl
-...
-  "mongo1" = {
-    plan         = "small",
-    data_size_gb = 40
-  },
-...
-```
-
-If a pool label is used, add, for example, the following to the `terraform.tfvars` file, matching the number of replicas required by the service to the number of nodes in the pool:
-
-```hcl
-...
-  " myapp-1" = {
-    plan         = "small",
-    data_size_gb = 40
-    labels = {
-      "pool" = "myapp"
-    }
-  },
-  "myapp-2" = {
-    plan         = "small",
-    data_size_gb = 40
-    labels = {
-      "pool" = "myapp"
-    }
-  },
-...
-```
