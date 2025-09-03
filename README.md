@@ -1,4 +1,9 @@
+# CloudStack Terraform & Ansible Swarm Template
+
+## Table of Contents
+
 - [CloudStack Terraform \& Ansible Swarm Template](#cloudstack-terraform--ansible-swarm-template)
+  - [Table of Contents](#table-of-contents)
   - [Features](#features)
   - [Project Structure](#project-structure)
   - [Quick Start](#quick-start)
@@ -25,8 +30,6 @@
       - [Add Environment-Specific Secrets](#add-environment-specific-secrets)
     - [Running the Workflow](#running-the-workflow)
   - [Makefile Commands](#makefile-commands)
-
-# CloudStack Terraform & Ansible Swarm Template
 
 This repository provides a template for deploying multiple, environment-specific Docker Swarm clusters on CloudStack using Terraform and Ansible.
 
@@ -358,4 +361,5 @@ The pipeline will deploy the selected environment using the secrets you've confi
 - `make deploy ENV=prod`: Deploy the `prod` environment.
 - `make plan ENV=prod`: Show the Terraform execution plan for the `prod` environment.
 - `make destroy ENV=prod`: Destroy the `prod` environment.
+- `make ssh PORT=22010`: SSH into the node with port 22010 (see the generated `environments/<dev>/inventory.yml` for reference).
 - `make ssh ENV=prod`: SSH into the first manager of the `prod` environment.
