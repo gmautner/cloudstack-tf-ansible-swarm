@@ -104,6 +104,7 @@
           - docker-ce
           - docker-ce-cli
           - containerd.io
+          - python3-docker
 
     - name: Create Docker service override directory
       file:
@@ -144,11 +145,6 @@
         state: started
         enabled: true
         daemon_reload: true
-
-    - name: Install Docker Python module
-      apt:
-        name: python3-docker
-        update_cache: true
 
     - name: Calculate available memory for each host
       set_fact:
