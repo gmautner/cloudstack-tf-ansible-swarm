@@ -1,19 +1,19 @@
 # Cluster name
 cluster_name = "cluster-2"
 
-# domain_suffix será derivado a partir de env, cluster_name e base_domain, exemplo: dev.cluster-2.giba.tech
+# Choose a domain which you can administer, including creating DNS records.
 base_domain = "giba.tech"
 
-# Opcional: Restringir acesso SSH (default: ["0.0.0.0/0"])
+# Optional: Restrict SSH access (default: ["0.0.0.0/0"])
 # allowed_ssh_cidr_blocks = ["203.0.113.0/24", "198.51.100.0/24"]
 
-# Opcional: Habilitar reinicializações automáticas após atualizações (default: false)
+# Optional: Enable automatic reboots after updates (default: false)
 automatic_reboot = true
 
-# Opcional: Horário UTC para reinicializações automáticas (default: "05:00")
+# Optional: UTC time for automatic reboots (default: "05:00")
 # automatic_reboot_time_utc = "05:00"
 
-# Opcional: Número de managers (default: 3, permitido: 1 ou 3)
+# Optional: Number of managers (default: 3, allowed: 1 or 3)
 manager_count = 1
 
 # Workers configuration
@@ -59,7 +59,7 @@ workers = {
     }
   },
 
-  # Workers for nextcloud-postgres-redis
+  # Workers for nextcloud-postgres-redis stack
   "nextcloud" = {
     plan         = "micro",
     data_size_gb = 20,
@@ -73,7 +73,7 @@ workers = {
     data_size_gb = 10
   },
 
-  # Workers for rocketchat-mongodb
+  # Workers for rocketchat-mongodb stack
   "rocketchat" = {
     plan         = "medium",
     data_size_gb = 20

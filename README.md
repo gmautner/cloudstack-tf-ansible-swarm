@@ -56,20 +56,21 @@ This template uses an S3 bucket to store the Terraform state.
 
 #### Bucket and IAM Policy Setup
 
-1.  **Create an IAM User**:
-    -   In your AWS account, navigate to the IAM service.
-    -   Create a new user. Give it a descriptive name (e.g., `terraform-s3-backend-user`).
-    -   For "Access type", select **Programmatic access**.
-    -   Proceed to the permissions step.
-
-2.  **Create an S3 Bucket**:
+1.  **Create an S3 Bucket**:
     -   Navigate to the S3 service.
-    -   Create a new, private S3 bucket. Choose a globally unique name (e.g., `your-company-terraform-states`).
+    -   Create a new, private S3 bucket, accepting default settings. Choose a globally unique name (e.g., `your-company-terraform-states`).
+    -   Take note of the bucket name and region.
+
+2.  **Create an IAM User**:
+    -   Navigate to the IAM service.
+    -   Create a new user. Give it a descriptive name (e.g., `terraform-s3-backend-user`).
+    -   In "Set permissions", select **Attach policies directly**.
+    -   Proceed to the permissions step.
 
 3.  **Create and Attach IAM Policy**:
     -   Go back to the IAM user you are creating.
-    -   Choose **Attach existing policies directly**, then click **Create policy**.
-    -   Go to the **JSON** tab and paste the following policy. Replace `<bucket_name>` with the name of the bucket you just created.
+    -   Choose **Attach policies directly**, then click **Create policy**.
+    -   Go to the **JSON** tab and paste the following policy. Replace `your-company-terraform-states` with the name of the bucket you just created.
 
         ```json
         {
@@ -81,8 +82,8 @@ This template uses an S3 bucket to store the Terraform state.
                         "s3:*"
                     ],
                     "Resource": [
-                        "arn:aws:s3:::<bucket_name>",
-                        "arn:aws:s3:::<bucket_name>/*"
+                        "arn:aws:s3:::your-company-terraform-states",
+                        "arn:aws:s3:::your-company-terraform-states/*"
                     ]
                 }
             ]
@@ -93,7 +94,7 @@ This template uses an S3 bucket to store the Terraform state.
 
 4.  **Save User Credentials**:
     -   Complete the user creation process.
-    -   **Important**: On the final screen, you will see the user's **Access key ID** and **Secret access key**. Copy these and save them in a secure location. You will not be able to see the secret key again.
+    -   On the summary screen, click on **Create access key** with use case **Command Line Interface (CLI)**. This will show you the **Access key** and **Secret access key**. Copy these and save them in a secure location.
 
 #### Backend and Credential Configuration
 
@@ -107,13 +108,11 @@ This template uses an S3 bucket to store the Terraform state.
         export AWS_SECRET_ACCESS_KEY="your-s3-secret-key"
         ```
 
-    -   **In CI/CD**: Add `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` to your GitHub repository secrets (see CI/CD section below for more information).
-
 ### 3. Configure Your First Environment
 
-This template comes with a `dev` and `prod` environment. Let's configure `dev`.
+Let's configure a new environment called `dev`.
 
-1. **Customize Terraform Variables**: Edit `environments/dev/terraform.tfvars` with your settings, including a unique `cluster_name`.
+1. **Customize Terraform Variables**: Copy `environments/example/terraform.tfvars` to `environments/dev/terraform.tfvars` and customize it with your settings, including a unique `cluster_name` and a `base_domain`.
 
 2. **Define Application Stacks**: The `environments/dev/stacks/` directory determines which applications are deployed.
 
@@ -181,8 +180,6 @@ This template comes with a `dev` and `prod` environment. Let's configure `dev`.
       export DOCKER_REGISTRY_USERNAME="your-username"
       export DOCKER_REGISTRY_PASSWORD="your-password-or-token"
       ```
-
-    - **In CI/CD**: Add them to your GitHub repository secrets (see CI/CD section below for more information).
 
 ### 4. Deploy
 
