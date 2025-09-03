@@ -300,7 +300,7 @@ Go to **Settings > Secrets and variables > Actions** and add the infrastructure 
 
 For each environment you created, add the application-specific secrets discovered in your `docker-compose.yml` files.
 
-**Note**: GitHub will automatically convert secret names to uppercase in the UI, but the deployment process will convert them back to lowercase to match your `secrets.yaml` format. For example, if you define `mysql_root_password` in your stack, GitHub will display it as `MYSQL_ROOT_PASSWORD`, but it will be correctly applied as `mysql_root_password` during deployment.
+> 💡 **Remark**: GitHub will automatically convert secret names to uppercase in the UI, but the deployment process will convert them back to lowercase to match your `secrets.yaml` format. For example, if you define `mysql_root_password` in your stack, GitHub will display it as `MYSQL_ROOT_PASSWORD`, but it will be correctly applied as `mysql_root_password` during deployment.
 
 **Environment Secrets (per environment):**
 
