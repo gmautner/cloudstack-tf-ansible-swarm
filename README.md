@@ -166,7 +166,7 @@ cp -r environments/example/stacks/02-monitoring environments/dev/stacks/
 
 ```bash
 # Example: Add optional application stacks
-cp -r environments/example/stacks/portainer environments/dev/stacks/
+cp -r environments/example/stacks/wordpress-mysql environments/dev/stacks/
 cp -r environments/example/stacks/nextcloud-postgres-redis environments/dev/stacks/
 ```
 
