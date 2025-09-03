@@ -8,6 +8,7 @@
   - [Project Structure](#project-structure)
   - [Quick Start](#quick-start)
     - [Prerequisites](#prerequisites)
+    - [Fork this repository](#fork-this-repository)
     - [Configure S3 Backend](#configure-s3-backend)
       - [Bucket and IAM Policy Setup](#bucket-and-iam-policy-setup)
         - [Create an S3 Bucket](#create-an-s3-bucket)
@@ -79,10 +80,14 @@ This repository provides a template for deploying multiple, environment-specific
 
 - Terraform >= 1.0
 - Ansible >= 2.10
-- CloudStack API Credentials & SSH Key Pair
+- CloudStack API Credentials
 - An AWS account
 - A [Slack webhook](https://docs.slack.dev/messaging/sending-messages-using-incoming-webhooks/) for receiving alerts
 - A DNS Zone that you can manage, for creating DNS records for your cluster, e.g. `infra.example.com`
+
+### Fork this repository
+
+Fork this repository to your own GitHub account.
 
 ### Configure S3 Backend
 
@@ -165,7 +170,7 @@ cp -r environments/example/stacks/portainer environments/dev/stacks/
 cp -r environments/example/stacks/nextcloud-postgres-redis environments/dev/stacks/
 ```
 
-**Adapting or creating Docker Swarm Compose Files**: If you need to adapt existing Docker Compose files for use with Docker Swarm, or create new ones from scratch, refer to the [Docker Compose Guide](DOCKER-COMPOSE-GUIDE.md) file for detailed instructions. (Pro tip: Refer your AI assistant to the guide for instant Docker Swarm expertise! 🧠)
+**Adapting or creating Docker Swarm Compose Files**: If you need to adapt existing Docker Compose files for use with Docker Swarm, or create new ones from scratch, refer to the [Docker Compose Guide](DOCKER-COMPOSE-GUIDE.md) file for detailed instructions. (Pro tip: Point your AI assistant to this guide for instant Docker Swarm expertise! 🧠)
 
 #### Define Application Secrets
 
@@ -340,13 +345,9 @@ Go to **Settings > Secrets and variables > Actions** and add the infrastructure 
 
 #### Add Environment-Specific Secrets
 
-For each environment you created, add the application-specific secrets discovered in your `docker-compose.yml` files.
+For each environment you created, add the application-specific secrets defined in your `docker-compose.yml` files (e.g., `mysql_root_password`, `nextcloud_admin_password`, etc.)
 
 > 💡 **Remark**: GitHub will automatically convert secret names to uppercase in the UI, but the deployment process will convert them back to lowercase to match your `secrets.yaml` format. For example, if you define `mysql_root_password` in your stack, GitHub will display it as `MYSQL_ROOT_PASSWORD`, but it will be correctly applied as `mysql_root_password` during deployment.
-
-**Environment Secrets (per environment):**
-
-- Any application secrets (e.g., `mysql_root_password`, `nextcloud_admin_password`, etc.)
 
 ### Running the Workflow
 
@@ -354,9 +355,11 @@ For each environment you created, add the application-specific secrets discovere
 - Select the **Deploy Infrastructure** or **Destroy Infrastructure** workflow.
 - Click **Run workflow**, enter the name of the environment you wish to target, and click **Run workflow**.
 
-The pipeline will deploy the selected environment using the secrets you've configured for that specific GitHub Environment.
+The deploy pipeline will deploy the selected environment using the secrets you've configured for that specific GitHub Environment, while the destroy pipeline will destroy the infrastructure for the selected environment.
 
 ## Example Makefile Commands
+
+Locally (not in CI/CD), you can use the following Makefile commands:
 
 - `make deploy`: Deploy the `dev` environment.
 - `make deploy ENV=prod`: Deploy the `prod` environment.
@@ -364,3 +367,5 @@ The pipeline will deploy the selected environment using the secrets you've confi
 - `make destroy ENV=prod`: Destroy the `prod` environment.
 - `make ssh`: SSH into the first manager of the `dev` environment.
 - `make ssh ENV=prod PORT=22010`: SSH into the node with port `22010` of the `prod` environment (see the generated `environments/prod/inventory.yml` for mapping between ports and nodes).
+
+> ⚠️ **Important**: Be careful when using local `make deploy` commands and CI/CD pipelines at the same time. Since the variables and secrets are passed from different sources, you will get different results if they aren't equal.
