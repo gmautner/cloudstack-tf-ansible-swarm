@@ -179,25 +179,33 @@
   hosts: managers[1:]
   become: true
   tasks:
+    - name: Debug manager hostname for swarm join
+      debug:
+        msg: "Manager hostname for swarm join: {{ groups['managers'][0] }}:2377"
+        
     - name: Join as manager
       community.docker.docker_swarm:
         state: join
         advertise_addr: "{{ private_ip }}"
         join_token: "{{ hostvars[groups['managers'][0]]['manager_token'] }}"
         remote_addrs:
-          - "{{ hostvars[groups['managers'][0]]['private_ip'] }}:2377"
+          - "{{ groups['managers'][0] }}:2377"
 
 - name: Join workers to swarm
   hosts: workers
   become: true
   tasks:
+    - name: Debug manager hostname for swarm join
+      debug:
+        msg: "Manager hostname for swarm join: {{ groups['managers'][0] }}:2377"
+        
     - name: Join as worker
       community.docker.docker_swarm:
         state: join
         advertise_addr: "{{ private_ip }}"
         join_token: "{{ hostvars[groups['managers'][0]]['worker_token'] }}"
         remote_addrs:
-          - "{{ hostvars[groups['managers'][0]]['private_ip'] }}:2377"
+          - "{{ groups['managers'][0] }}:2377"
 
 - name: Apply node labels
   hosts: workers
