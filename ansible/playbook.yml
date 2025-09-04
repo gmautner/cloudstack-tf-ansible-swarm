@@ -164,7 +164,6 @@
     - name: Initialize Docker Swarm
       community.docker.docker_swarm:
         state: present
-        advertise_addr: "{{ private_ip }}"
 
     - name: Get swarm join tokens
       community.docker.docker_swarm_info:
@@ -182,7 +181,6 @@
     - name: Join as manager
       community.docker.docker_swarm:
         state: join
-        advertise_addr: "{{ private_ip }}"
         join_token: "{{ hostvars[groups['managers'][0]]['manager_token'] }}"
         remote_addrs:
           - "{{ groups['managers'][0] }}:2377"
@@ -194,7 +192,6 @@
     - name: Join as worker
       community.docker.docker_swarm:
         state: join
-        advertise_addr: "{{ private_ip }}"
         join_token: "{{ hostvars[groups['managers'][0]]['worker_token'] }}"
         remote_addrs:
           - "{{ groups['managers'][0] }}:2377"
