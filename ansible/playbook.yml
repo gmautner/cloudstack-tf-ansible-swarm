@@ -183,18 +183,24 @@
         state: join
         join_token: "{{ hostvars[groups['managers'][0]]['manager_token'] }}"
         remote_addrs:
-          - "{{ groups['managers'][0] }}:2377"
+          - "{{ hostvars[groups['managers'][0]]['private_ip'] }}:2377"
 
 - name: Join workers to swarm
   hosts: workers
   become: true
   tasks:
+    # Temporary workaround to fix existing swarm state that has hardcoded IP addresses
+    # - name: Force leave swarm
+    #   community.docker.docker_swarm:
+    #     state: absent
+    #     force: true
+
     - name: Join as worker
       community.docker.docker_swarm:
         state: join
         join_token: "{{ hostvars[groups['managers'][0]]['worker_token'] }}"
         remote_addrs:
-          - "{{ groups['managers'][0] }}:2377"
+          - "{{ hostvars[groups['managers'][0]]['private_ip'] }}:2377"
 
 - name: Apply node labels
   hosts: workers
