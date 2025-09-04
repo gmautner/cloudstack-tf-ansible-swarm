@@ -4,7 +4,7 @@
   become: true
   vars:
     data_disk_device: /dev/vdb
-    data_mount_point: /mnt/docker-data
+    docker_data_root: /docker-data
   
   tasks:
     - name: Check if data disk exists
@@ -20,9 +20,10 @@
       when: data_disk.stat.exists
 
     # Usamos um diretório de volumes diferente do padrão do Docker para evitar restrições de permissões (exemplo: nodeexporter)
+    # Queremos persistir apenas os volumes, não todas as configurações do Docker, para funcionamento correto de DR
     - name: Mount data disk to Docker data root directory
       mount:
-        path: "{{ data_mount_point }}"
+        path: "{{ docker_data_root }}/volumes"
         src: "{{ data_disk_device }}"
         fstype: ext4
         opts: defaults
@@ -134,7 +135,7 @@
               "max-file": "3"
             },
             "metrics-addr": "0.0.0.0:9323",
-            "data-root": "{{ data_mount_point }}"
+            "data-root": "{{ docker_data_root }}"
           }
         mode: '0644'
       notify: restart docker
