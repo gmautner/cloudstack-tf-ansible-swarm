@@ -30,6 +30,14 @@
         state: mounted
       when: data_disk.stat.exists
 
+    # Necessário para node exporter conseguir medir ocupação dos volumes do Docker
+    - name: Set execute permissions for others on docker data root directory
+      file:
+        path: "{{ docker_data_root }}"
+        mode: o+x
+        state: directory
+      when: data_disk.stat.exists
+
     # FIX enquanto houver problema GRUB
     - name: Detect the root disk device
       shell: |
