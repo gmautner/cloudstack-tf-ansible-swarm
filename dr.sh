@@ -15,6 +15,7 @@ NC='\033[0m' # No Color
 # Global variables
 DRY_RUN=false
 CLUSTER_ID=""
+ENV=""
 TERRAFORM_DIR="terraform"
 
 # Functions
@@ -36,7 +37,7 @@ log_error() {
 
 show_usage() {
     cat << EOF
-Uso: $0 -c SOURCE_CLUSTER_ID [OPÇÕES]
+Uso: $0 -c SOURCE_CLUSTER_ID -e ENVIRONMENT [OPÇÕES]
 
 Script de Recuperação de Desastres para Cluster Docker Swarm no CloudStack
 
@@ -48,14 +49,13 @@ CONCEITO:
 
 OPÇÕES:
     -c, --cluster-id SOURCE_ID     ID do cluster de origem (snapshots) - OBRIGATÓRIO
+    -e, --env ENVIRONMENT          Ambiente de destino (dev, prod, etc.) - OBRIGATÓRIO
     -d, --dry-run                  Simular operações sem executá-las
-    -t, --terraform-dir DIR        Caminho para o diretório do Terraform (padrão: terraform)
     -h, --help                     Exibir esta mensagem de ajuda
 
 EXEMPLOS:
-    $0 -c cluster-old-xyz123                   # Recuperar do cluster antigo para o novo
-    $0 --cluster-id cluster-old-xyz123 --dry-run # Simular recuperação
-    $0 -c cluster-old-xyz123 -t /caminho/para/terraform
+    $0 -c cluster-old-xyz123 -e dev                      # Recuperar do cluster antigo para o ambiente dev
+    $0 --cluster-id cluster-old-xyz123 --env prod --dry-run # Simular recuperação no ambiente prod
 
 FLUXO:
     1. Identifica VMs e discos do cluster NOVO (current Terraform state)
@@ -69,6 +69,8 @@ VARIÁVEIS DE AMBIENTE:
     CLOUDSTACK_API_KEY      Chave de API do CloudStack
     CLOUDSTACK_SECRET_KEY   Chave secreta do CloudStack
     CLOUDSTACK_API_URL      URL da API do CloudStack (padrão: https://painel-cloud.locaweb.com.br/client/api)
+    AWS_ACCESS_KEY_ID       Chave de acesso AWS para backend S3
+    AWS_SECRET_ACCESS_KEY   Chave secreta AWS para backend S3
 
 EOF
 }
@@ -115,6 +117,17 @@ check_dependencies() {
         exit 1
     fi
     
+    # Verificar credenciais AWS para acesso ao backend S3
+    if [[ -z "${AWS_ACCESS_KEY_ID:-}" ]]; then
+        log_error "Variável de ambiente AWS_ACCESS_KEY_ID é obrigatória para acesso ao backend S3"
+        exit 1
+    fi
+    
+    if [[ -z "${AWS_SECRET_ACCESS_KEY:-}" ]]; then
+        log_error "Variável de ambiente AWS_SECRET_ACCESS_KEY é obrigatória para acesso ao backend S3"
+        exit 1
+    fi
+    
     # Verificar jq
     if ! command -v jq &> /dev/null; then
         log_error "jq é necessário mas não está instalado. Por favor, instale o jq primeiro."
@@ -148,12 +161,43 @@ check_dependencies() {
     log_success "Verificação de dependências aprovada"
 }
 
+validate_environment() {
+    local env="$1"
+    log_info "Validando ambiente: $env"
+    
+    # Verificar se o diretório do ambiente existe
+    if [[ ! -d "environments/$env" ]]; then
+        log_error "Diretório do ambiente não encontrado: environments/$env"
+        echo ""
+        echo "Ambientes disponíveis:"
+        ls -1 environments/ 2>/dev/null | grep -v example || echo "  Nenhum ambiente encontrado"
+        exit 1
+    fi
+    
+    # Verificar se terraform.tfvars existe
+    if [[ ! -f "environments/$env/terraform.tfvars" ]]; then
+        log_error "Arquivo terraform.tfvars não encontrado: environments/$env/terraform.tfvars"
+        exit 1
+    fi
+    
+    log_success "Ambiente validado: $env"
+}
+
 get_terraform_cluster_id() {
-    log_info "Obtendo ID do cluster atual do Terraform..."
+    local env="$1"
+    log_info "Obtendo ID do cluster atual do Terraform para ambiente: $env"
     
     # Mudar para o diretório do terraform temporariamente
     local current_dir=$(pwd)
     cd "$TERRAFORM_DIR"
+    
+    # Inicializar Terraform com backend S3 específico do ambiente
+    log_info "Inicializando Terraform com backend S3 para ambiente $env..."
+    if ! terraform init -backend-config="key=env/$env/terraform.tfstate" > /dev/null 2>&1; then
+        log_error "Falha ao inicializar Terraform com backend S3"
+        cd "$current_dir"
+        exit 1
+    fi
     
     # Obter ID do cluster da saída do terraform
     if TERRAFORM_CLUSTER_ID=$(terraform output -raw cluster_id 2>/dev/null); then
@@ -163,9 +207,10 @@ get_terraform_cluster_id() {
         log_error "Não foi possível obter o ID do cluster da saída do Terraform"
         echo "" >&2
         echo "Verifique se:" >&2
-        echo "- A infraestrutura foi implantada com 'terraform apply'" >&2
+        echo "- A infraestrutura foi implantada com 'make deploy ENV=$env'" >&2
         echo "- O output 'cluster_id' está definido no Terraform" >&2
         echo "- O backend do Terraform está configurado corretamente" >&2
+        echo "- As credenciais AWS estão configuradas (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)" >&2
         echo "" >&2
         echo "Saídas disponíveis:" >&2
         terraform output >&2 2>/dev/null || echo "Nenhuma saída disponível" >&2
@@ -337,6 +382,7 @@ recover_worker_snapshots() {
     local worker_names="$1"
     local source_cluster_id="$2"
     local dest_cluster_id="$3"
+    local env="$4"
     
     log_info "Recuperando snapshots dos workers..."
     log_info "Cluster de origem (snapshots): $source_cluster_id"
@@ -412,6 +458,13 @@ recover_worker_snapshots() {
         
         cd "$TERRAFORM_DIR"
         
+        # Garantir que o Terraform está inicializado com o backend correto
+        if ! terraform init -backend-config="key=env/$env/terraform.tfstate" > /dev/null 2>&1; then
+            log_error "Falha ao inicializar Terraform para operações de estado"
+            cd - > /dev/null
+            continue
+        fi
+        
         # Remover estado antigo
         execute_command "terraform state rm 'cloudstack_disk.worker_data[\"$worker_name\"]'" "Removendo disco antigo do estado do Terraform"
         
@@ -435,13 +488,13 @@ main() {
                 CLUSTER_ID="$2"
                 shift 2
                 ;;
+            -e|--env)
+                ENV="$2"
+                shift 2
+                ;;
             -d|--dry-run)
                 DRY_RUN=true
                 shift
-                ;;
-            -t|--terraform-dir)
-                TERRAFORM_DIR="$2"
-                shift 2
                 ;;
             -h|--help)
                 show_usage
@@ -466,8 +519,22 @@ main() {
         exit 1
     fi
     
+    # Verificar se ambiente foi fornecido (obrigatório)
+    if [[ -z "$ENV" ]]; then
+        log_error "O ambiente de destino é obrigatório para recuperação de desastre"
+        echo ""
+        echo "Use a opção -e ou --env para especificar o ambiente de destino."
+        echo "Este deve ser o ambiente onde o cluster novo está implantado (ex: dev, prod)."
+        echo ""
+        show_usage
+        exit 1
+    fi
+    
+    # Validar ambiente
+    validate_environment "$ENV"
+    
     # Get destination cluster ID from Terraform (call only once)
-    get_terraform_cluster_id
+    get_terraform_cluster_id "$ENV"
     
     # Validar que o cluster_id é diferente do atual no Terraform
     validate_cluster_id "$TERRAFORM_CLUSTER_ID"
@@ -492,7 +559,7 @@ main() {
     detach_worker_disks "$DISK_IDS"
     
     get_destination_worker_names "$TERRAFORM_CLUSTER_ID"
-    recover_worker_snapshots "$WORKER_NAMES" "$CLUSTER_ID" "$TERRAFORM_CLUSTER_ID"
+    recover_worker_snapshots "$WORKER_NAMES" "$CLUSTER_ID" "$TERRAFORM_CLUSTER_ID" "$ENV"
     
     start_vms "$VM_IDS"
     
@@ -500,8 +567,8 @@ main() {
     
     echo ""
     log_info "Próximos passos:"
-    echo "  1. Execute 'cd $TERRAFORM_DIR && terraform plan' para revisar as mudanças"
-    echo "  2. Execute 'cd $TERRAFORM_DIR && terraform apply' para aplicar tags aos novos discos dos workers"
+    echo "  1. Execute 'make plan ENV=$ENV' para revisar as mudanças"
+    echo "  2. Execute 'make deploy ENV=$ENV' para aplicar tags aos novos discos dos workers"
     echo "  3. Verifique se suas aplicações estão funcionando corretamente"
 }
 
