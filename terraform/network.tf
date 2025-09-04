@@ -26,6 +26,13 @@ resource "cloudstack_ssh_keypair" "main" {
   name = "${var.cluster_name}-${var.env}"
 }
 
+# Wait 15 seconds after network creation before creating instances
+resource "time_sleep" "wait_for_network" {
+  depends_on = [cloudstack_network.main]
+  
+  create_duration = "15s"
+}
+
 # Create a flattened list of all ports across all public IPs for dependency tracking
 locals {
   all_ports = flatten([

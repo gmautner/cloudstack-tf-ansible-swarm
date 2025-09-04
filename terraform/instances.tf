@@ -21,6 +21,8 @@ locals {
 resource "cloudstack_instance" "managers" {
   count = var.manager_count
 
+  depends_on = [time_sleep.wait_for_network]
+
   name             = "manager-${count.index + 1}"
   template         = data.cloudstack_template.main.id
   service_offering = local.manager_service_offering
@@ -55,6 +57,8 @@ resource "cloudstack_disk" "manager_data" {
 # Worker instances
 resource "cloudstack_instance" "workers" {
   for_each = var.workers
+
+  depends_on = [time_sleep.wait_for_network]
 
   name             = each.key
   template         = data.cloudstack_template.main.id
