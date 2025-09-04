@@ -469,7 +469,7 @@ recover_worker_snapshots() {
         execute_command "terraform state rm 'cloudstack_disk.worker_data[\"$worker_name\"]'" "Removendo disco antigo do estado do Terraform"
         
         # Importar novo estado
-        execute_command "terraform import 'cloudstack_disk.worker_data[\"$worker_name\"]' '$new_volume_id'" "Importando novo disco para o estado do Terraform"
+        execute_command "terraform import 'cloudstack_disk.worker_data[\"$worker_name\"]' '$new_volume_id' -var-file=../environments/$env/terraform.tfvars -var='env=$env'" "Importando novo disco para o estado do Terraform"
         
         cd - > /dev/null
         
