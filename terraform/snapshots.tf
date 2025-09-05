@@ -40,25 +40,28 @@ locals {
   zone_ids = "${data.cloudstack_zone.main.id},${data.cloudstack_zone.backup.id}"
 }
 
-# Create snapshot policies for worker data disks using CloudMonkey (cmk)
-resource "null_resource" "worker_snapshot_policies" {
-  for_each = var.workers
-  
-  depends_on = [
-    cloudstack_disk.worker_data
-  ]
 
-  triggers = {
-    volume_id = cloudstack_disk.worker_data[each.key].id
-  }
-
-  # Initialize CloudMonkey with credentials
+resource "null_resource" "initialize_cloudmonkey" {
   provisioner "local-exec" {
     command = <<-EOT
       cmk set url $CLOUDSTACK_API_URL && \
       cmk set apikey $CLOUDSTACK_API_KEY && \
       cmk set secretkey $CLOUDSTACK_SECRET_KEY
     EOT
+  }
+}
+
+# Create snapshot policies for worker data disks using CloudMonkey (cmk)
+resource "null_resource" "worker_snapshot_policies" {
+  for_each = var.workers
+  
+  depends_on = [
+    cloudstack_disk.worker_data,
+    null_resource.initialize_cloudmonkey
+  ]
+
+  triggers = {
+    volume_id = cloudstack_disk.worker_data[each.key].id
   }
 
   # Hourly snapshots
