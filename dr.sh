@@ -363,23 +363,23 @@ detach_worker_disks() {
     log_success "Todos os discos de workers desanexados"
 }
 
-get_destination_worker_names() {
+get_destination_worker_ids() {
     local dest_cluster_id="$1"
-    log_info "Obtendo nomes dos workers do cluster de destino: $dest_cluster_id"
+    log_info "Obtendo IDs dos workers do cluster de destino: $dest_cluster_id"
     
-    local cmd="cmk list virtualmachines tags[0].key=cluster_id tags[0].value=$dest_cluster_id tags[1].key=role tags[1].value=worker | jq -r '.virtualmachine[]?.name'"
-    WORKER_NAMES=$(eval "$cmd")
+    local cmd="cmk list virtualmachines tags[0].key=cluster_id tags[0].value=$dest_cluster_id tags[1].key=role tags[1].value=worker | jq -r '.virtualmachine[]?.id'"
+    WORKER_IDS=$(eval "$cmd")
     
-    if [[ -z "$WORKER_NAMES" ]]; then
-        log_error "Nenhum nome de worker encontrado no cluster de destino: $dest_cluster_id"
+    if [[ -z "$WORKER_IDS" ]]; then
+        log_error "Nenhum worker encontrado no cluster de destino: $dest_cluster_id"
         exit 1
     fi
     
-    log_success "Workers do cluster de destino encontrados: $(echo "$WORKER_NAMES" | tr '\n' ' ')"
+    log_success "Workers do cluster de destino encontrados: $(echo "$WORKER_IDS" | tr '\n' ' ')"
 }
 
 recover_worker_snapshots() {
-    local worker_names="$1"
+    local worker_ids="$1"
     local source_cluster_id="$2"
     local dest_cluster_id="$3"
     local env="$4"
@@ -391,20 +391,20 @@ recover_worker_snapshots() {
     local timestamp
     timestamp=$(date +"%Y%m%d-%H%M%S%z")
     
-    while IFS= read -r worker_name; do
-        [[ -n "$worker_name" ]] || continue
+    while IFS= read -r worker_vm_id; do
+        [[ -n "$worker_vm_id" ]] || continue
         
-        log_info "Processando worker: $worker_name"
+        # Get worker name from VM ID for logging and snapshot matching
+        local worker_name
+        local name_cmd="cmk list virtualmachines id=$worker_vm_id | jq -r '.virtualmachine[]?.name'"
+        worker_name=$(eval "$name_cmd")
         
-        # Get worker VM ID from DESTINATION cluster
-        local worker_vm_id
-        local vm_cmd="cmk list virtualmachines name=$worker_name tags[0].key=cluster_id tags[0].value=$dest_cluster_id | jq -r '.virtualmachine[]?.id'"
-        worker_vm_id=$(eval "$vm_cmd")
-        
-        if [[ -z "$worker_vm_id" ]]; then
-            log_error "VM não encontrada para o worker: $worker_name no cluster de destino: $dest_cluster_id"
+        if [[ -z "$worker_name" ]]; then
+            log_error "Nome não encontrado para VM ID: $worker_vm_id"
             continue
         fi
+        
+        log_info "Processando worker: $worker_name (ID: $worker_vm_id)"
         
         # Listar snapshots do SOURCE cluster para este worker
         local snapshots_cmd="cmk list snapshots tags[0].key=cluster_id tags[0].value=$source_cluster_id | jq '.snapshot[]? | select(.name | test(\"^${worker_name}_${worker_name}-data\")) | {id: .id, created: .created}' | jq -s 'sort_by(.created)'"
@@ -475,7 +475,7 @@ recover_worker_snapshots() {
         
         log_success "Recuperação do worker $worker_name concluída"
         
-    done <<< "$worker_names"
+    done <<< "$worker_ids"
     
     log_success "Todos os snapshots dos workers recuperados"
 }
@@ -558,8 +558,8 @@ main() {
     get_destination_worker_disks "$TERRAFORM_CLUSTER_ID"
     detach_worker_disks "$DISK_IDS"
     
-    get_destination_worker_names "$TERRAFORM_CLUSTER_ID"
-    recover_worker_snapshots "$WORKER_NAMES" "$CLUSTER_ID" "$TERRAFORM_CLUSTER_ID" "$ENV"
+    get_destination_worker_ids "$TERRAFORM_CLUSTER_ID"
+    recover_worker_snapshots "$WORKER_IDS" "$CLUSTER_ID" "$TERRAFORM_CLUSTER_ID" "$ENV"
     
     start_vms "$VM_IDS"
     
