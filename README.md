@@ -131,7 +131,7 @@ This template uses an S3 bucket to store the Terraform state.
 
 #### Save User Credentials
 
-- Complete the user creation process.
+- Complete the user creation process and click on **View user**.
 - On the summary screen, click on **Create access key** with use case **Command Line Interface (CLI)**. This will show you the **Access key** and **Secret access key**. Copy these and save them in a secure location.
 
 ### Configure Your First Environment
