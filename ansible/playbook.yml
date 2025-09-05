@@ -21,7 +21,7 @@
 
     # Usamos um diretório de volumes diferente do padrão do Docker para evitar restrições de permissões (exemplo: nodeexporter)
     # Queremos persistir apenas os volumes, não todas as configurações do Docker, para funcionamento correto de DR
-    - name: Mount data disk to Docker data root directory
+    - name: Mount Docker volumes disk
       mount:
         path: "{{ docker_data_root }}/volumes"
         src: "{{ data_disk_device }}"
