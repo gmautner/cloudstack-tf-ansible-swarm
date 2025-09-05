@@ -301,7 +301,7 @@ get_destination_cluster_vms() {
     local dest_cluster_id="$1"
     log_info "Obtendo VMs do cluster de destino: $dest_cluster_id"
     
-    local cmd="cmk list virtualmachines | jq -r '.virtualmachine[]? | select(.tags[]? | .key==\"cluster_id\" and .value==\"$dest_cluster_id\") | .id'"
+    local cmd="cmk list virtualmachines tags[0].key=cluster_id tags[0].value=$dest_cluster_id | jq -r '.virtualmachine[]?.id'"
     VM_IDS=$(eval "$cmd")
     
     if [[ -z "$VM_IDS" ]]; then
@@ -340,7 +340,7 @@ get_destination_worker_disks() {
     local dest_cluster_id="$1"
     log_info "Obtendo discos dos workers do cluster de destino: $dest_cluster_id"
     
-    local cmd="cmk list volumes | jq -r '.volume[]? | select(.tags[]? | .key==\"cluster_id\" and .value==\"$dest_cluster_id\") | select(.tags[]? | .key==\"role\" and .value==\"worker\") | .id'"
+    local cmd="cmk list volumes tags[0].key=cluster_id tags[0].value=$dest_cluster_id tags[1].key=role tags[1].value=worker | jq -r '.volume[]?.id'"
     DISK_IDS=$(eval "$cmd")
     
     if [[ -z "$DISK_IDS" ]]; then
@@ -367,7 +367,7 @@ get_destination_worker_names() {
     local dest_cluster_id="$1"
     log_info "Obtendo nomes dos workers do cluster de destino: $dest_cluster_id"
     
-    local cmd="cmk list virtualmachines | jq -r '.virtualmachine[]? | select(.tags[]? | .key==\"cluster_id\" and .value==\"$dest_cluster_id\") | select(.tags[]? | .key==\"role\" and .value==\"worker\") | .tags[] | select(.key==\"name\") | .value'"
+    local cmd="cmk list virtualmachines tags[0].key=cluster_id tags[0].value=$dest_cluster_id tags[1].key=role tags[1].value=worker | jq -r '.virtualmachine[]?.name'"
     WORKER_NAMES=$(eval "$cmd")
     
     if [[ -z "$WORKER_NAMES" ]]; then
@@ -398,7 +398,7 @@ recover_worker_snapshots() {
         
         # Get worker VM ID from DESTINATION cluster
         local worker_vm_id
-        local vm_cmd="cmk list virtualmachines | jq -r '.virtualmachine[]? | select(.tags[]? | .key==\"cluster_id\" and .value==\"$dest_cluster_id\") | select(.name==\"$worker_name\") | .id'"
+        local vm_cmd="cmk list virtualmachines name=$worker_name tags[0].key=cluster_id tags[0].value=$dest_cluster_id | jq -r '.virtualmachine[]?.id'"
         worker_vm_id=$(eval "$vm_cmd")
         
         if [[ -z "$worker_vm_id" ]]; then
@@ -407,7 +407,7 @@ recover_worker_snapshots() {
         fi
         
         # Listar snapshots do SOURCE cluster para este worker
-        local snapshots_cmd="cmk list snapshots | jq '.snapshot[]? | select(.tags[]? | .key==\"cluster_id\" and .value==\"$source_cluster_id\") | select(.name | test(\"^${worker_name}_${worker_name}-data\")) | {id: .id, created: .created}' | jq -s 'sort_by(.created)'"
+        local snapshots_cmd="cmk list snapshots tags[0].key=cluster_id tags[0].value=$source_cluster_id | jq '.snapshot[]? | select(.name | test(\"^${worker_name}_${worker_name}-data\")) | {id: .id, created: .created}' | jq -s 'sort_by(.created)'"
         
         log_info "Snapshots do cluster de origem ($source_cluster_id) para $worker_name:"
         local snapshot_list
@@ -420,7 +420,7 @@ recover_worker_snapshots() {
         fi
         
         # Get most recent snapshot ID from SOURCE cluster
-        local latest_snapshot_cmd="cmk list snapshots | jq '.snapshot[]? | select(.tags[]? | .key==\"cluster_id\" and .value==\"$source_cluster_id\") | select(.name | test(\"^${worker_name}_${worker_name}-data\"))' | jq -sr 'sort_by(.created) | last | .id'"
+        local latest_snapshot_cmd="cmk list snapshots tags[0].key=cluster_id tags[0].value=$source_cluster_id | jq '.snapshot[]? | select(.name | test(\"^${worker_name}_${worker_name}-data\"))' | jq -sr 'sort_by(.created) | last | .id'"
         local latest_snapshot_id
         latest_snapshot_id=$(eval "$latest_snapshot_cmd")
         
@@ -436,7 +436,7 @@ recover_worker_snapshots() {
         execute_command "cmk create volume name='$volume_name' snapshotid='$latest_snapshot_id' virtualmachineid='$worker_vm_id'" "Criando volume a partir do snapshot para $worker_name"
         
         # Get the new volume ID
-        local new_volume_cmd="cmk list volumes | jq -r '.volume[]? | select(.name==\"$volume_name\") | .id'"
+        local new_volume_cmd="cmk list volumes name=$volume_name | jq -r '.volume[]?.id'"
         local new_volume_id
         
         if [[ "$DRY_RUN" == "true" ]]; then
