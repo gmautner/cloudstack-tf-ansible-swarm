@@ -406,7 +406,9 @@ recover_worker_snapshots() {
         
         log_info "Processando worker: $worker_name (ID: $worker_vm_id)"
         
-        # Listar snapshots do SOURCE cluster para este worker
+        # Primeiro coletamos os ids pela tag name
+        # Depois filtramos pelo cluster de origem, para evitar coincidências de nomes com outros clusters.
+        # Obs. O CloudStack não exibe todas as tags dos snapshots mas elas existem!
         local snapshot_ids_cmd="cmk list snapshots tags[0].key=name tags[0].value=$worker_name | jq -r '[.snapshot[].id] | join(\",\")'"
         local snapshot_ids
         snapshot_ids=$(eval "$snapshot_ids_cmd")
