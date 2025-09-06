@@ -340,7 +340,7 @@ get_destination_worker_disks() {
     local dest_cluster_id="$1"
     log_info "Obtendo discos dos workers do cluster de destino: $dest_cluster_id"
     
-    local cmd="cmk list volumes tags[0].key=cluster_id tags[0].value=$dest_cluster_id tags[1].key=role tags[1].value=worker | jq -r '.volume[]?.id'"
+    local cmd="cmk list volumes tags[0].key=cluster_id tags[0].value=$dest_cluster_id | jq -r '.volume[]? | select(.tags[]? | .key==\"role\" and .value==\"worker\") | .id'"
     DISK_IDS=$(eval "$cmd")
     
     if [[ -z "$DISK_IDS" ]]; then
@@ -367,7 +367,7 @@ get_destination_worker_ids() {
     local dest_cluster_id="$1"
     log_info "Obtendo IDs dos workers do cluster de destino: $dest_cluster_id"
     
-    local cmd="cmk list virtualmachines tags[0].key=cluster_id tags[0].value=$dest_cluster_id tags[1].key=role tags[1].value=worker | jq -r '.virtualmachine[]?.id'"
+    local cmd="cmk list virtualmachines tags[0].key=cluster_id tags[0].value=$dest_cluster_id | jq -r '.virtualmachine[]? | select(.tags[]? | .key==\"role\" and .value==\"worker\") | .id'"
     WORKER_IDS=$(eval "$cmd")
     
     if [[ -z "$WORKER_IDS" ]]; then
@@ -407,9 +407,20 @@ recover_worker_snapshots() {
         log_info "Processando worker: $worker_name (ID: $worker_vm_id)"
         
         # Listar snapshots do SOURCE cluster para este worker
-        local snapshots_cmd="cmk list snapshots tags[0].key=cluster_id tags[0].value=$source_cluster_id | jq '.snapshot[]? | select(.name | test(\"^${worker_name}_${worker_name}-data\")) | {id: .id, created: .created}' | jq -s 'sort_by(.created)'"
+        local snapshot_ids_cmd="cmk list snapshots tags[0].key=name tags[0].value=$worker_name | jq -r '[.snapshot[].id] | join(\",\")'"
+        local snapshot_ids
+        snapshot_ids=$(eval "$snapshot_ids_cmd")
+
+        if [[ -z "$snapshot_ids" ]]; then
+            log_warning "Nenhum snapshot encontrado com a tag name=$worker_name"
+            continue
+        fi
+
+        log_info "Snapshots encontrados com a tag name=$worker_name: $snapshot_ids"
+        log_info "Filtrando snapshots pelo cluster de origem: $source_cluster_id"
+
+        local snapshots_cmd="cmk list snapshots ids=$snapshot_ids tags[0].key=cluster_id tags[0].value=$source_cluster_id | jq '.snapshot[]? | {id: .id, created: .created}' | jq -s 'sort_by(.created)'"
         
-        log_info "Snapshots do cluster de origem ($source_cluster_id) para $worker_name:"
         local snapshot_list
         snapshot_list=$(eval "$snapshots_cmd")
         
@@ -417,12 +428,12 @@ recover_worker_snapshots() {
             echo "$snapshot_list" | jq -r '.[] | "  ID: \(.id), Criado: \(.created)"'
         else
             log_warning "Nenhum snapshot encontrado para $worker_name no cluster de origem: $source_cluster_id"
+            continue
         fi
         
-        # Get most recent snapshot ID from SOURCE cluster
-        local latest_snapshot_cmd="cmk list snapshots tags[0].key=cluster_id tags[0].value=$source_cluster_id | jq '.snapshot[]? | select(.name | test(\"^${worker_name}_${worker_name}-data\"))' | jq -sr 'sort_by(.created) | last | .id'"
+        # Get most recent snapshot ID from the filtered list
         local latest_snapshot_id
-        latest_snapshot_id=$(eval "$latest_snapshot_cmd")
+        latest_snapshot_id=$(echo "$snapshot_list" | jq -r 'last | .id')
         
         if [[ -z "$latest_snapshot_id" || "$latest_snapshot_id" == "null" ]]; then
             log_error "Nenhum snapshot encontrado para o worker: $worker_name"
@@ -554,7 +565,7 @@ main() {
     
     get_destination_cluster_vms "$TERRAFORM_CLUSTER_ID"
     stop_vms "$VM_IDS"
-    
+
     get_destination_worker_disks "$TERRAFORM_CLUSTER_ID"
     detach_worker_disks "$DISK_IDS"
     
