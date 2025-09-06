@@ -167,7 +167,7 @@ cp -r environments/example/stacks/wordpress-mysql environments/dev/stacks/
 cp -r environments/example/stacks/nextcloud-postgres-redis environments/dev/stacks/
 ```
 
-**Adapting or creating Docker Swarm Compose Files**: If you need to adapt existing Docker Compose files for use with Docker Swarm, or create new ones from scratch, refer to the [Docker Compose Guide](DOCKER-COMPOSE-GUIDE.md) file for detailed instructions. (Pro tip: Point your AI assistant to this guide for instant Docker Swarm expertise! 🧠)
+**Adapting or creating Docker Swarm Compose Files**: If you need to adapt existing Docker Compose files for use with Docker Swarm, or create new ones from scratch, refer to the [Docker Compose Guide](DOCKER-COMPOSE-GUIDE.md) file for detailed instructions. (🧠 **AI Tip**: Point your AI assistant to this guide for instant Docker Swarm expertise!)
 
 #### Define Application Secrets
 
@@ -258,6 +258,15 @@ For private container registries, you can also optionally provide your credentia
 export DOCKER_REGISTRY_URL="your-registry-url"
 export DOCKER_REGISTRY_USERNAME="your-username"
 export DOCKER_REGISTRY_PASSWORD="your-password-or-token"
+```
+
+> 🚀 **Pro Tip**: A quick and easy way to set up your environment is to use a `.env` file. Copy the example file, edit it with your credentials, set the correct permissions, and source it:
+
+```bash
+cp .env.example .env
+nano .env  # Or your favorite editor
+chmod 600 .env
+source .env
 ```
 
 > 💡 **Remark**: in CI/CD, the infrastructure credentials are passed directly to the playbook as repository-level variables, bypassing the need for exporting them locally (see more in the [CI/CD section](#cicd-with-github-actions)).
