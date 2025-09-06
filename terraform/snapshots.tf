@@ -79,7 +79,15 @@ resource "null_resource" "worker_snapshot_policies" {
           maxsnaps=3 \
           zoneids=${local.zone_ids} \
           tags[0].key=cluster_id \
-          tags[0].value=${local.cluster_id}
+          tags[0].value=${local.cluster_id} \
+          tags[1].key=role \
+          tags[1].value=worker \
+          tags[2].key=name \
+          tags[2].value=${each.key} \
+          tags[3].key=cluster_name \
+          tags[3].value=${var.cluster_name} \
+          tags[4].key=env \
+          tags[4].value=${var.env}
       fi
     EOT
   }
@@ -99,7 +107,15 @@ resource "null_resource" "worker_snapshot_policies" {
           maxsnaps=2 \
           zoneids=${local.zone_ids} \
           tags[0].key=cluster_id \
-          tags[0].value=${local.cluster_id}
+          tags[0].value=${local.cluster_id} \
+          tags[1].key=role \
+          tags[1].value=worker \
+          tags[2].key=name \
+          tags[2].value=${each.key} \
+          tags[3].key=cluster_name \
+          tags[3].value=${var.cluster_name} \
+          tags[4].key=env \
+          tags[4].value=${var.env}
       fi
     EOT
   }
@@ -119,7 +135,15 @@ resource "null_resource" "worker_snapshot_policies" {
           maxsnaps=2 \
           zoneids=${local.zone_ids} \
           tags[0].key=cluster_id \
-          tags[0].value=${local.cluster_id}
+          tags[0].value=${local.cluster_id} \
+          tags[1].key=role \
+          tags[1].value=worker \
+          tags[2].key=name \
+          tags[2].value=${each.key} \
+          tags[3].key=cluster_name \
+          tags[3].value=${var.cluster_name} \
+          tags[4].key=env \
+          tags[4].value=${var.env}
       fi
     EOT
   }
@@ -139,7 +163,15 @@ resource "null_resource" "worker_snapshot_policies" {
           maxsnaps=2 \
           zoneids=${local.zone_ids} \
           tags[0].key=cluster_id \
-          tags[0].value=${local.cluster_id}
+          tags[0].value=${local.cluster_id} \
+          tags[1].key=role \
+          tags[1].value=worker \
+          tags[2].key=name \
+          tags[2].value=${each.key} \
+          tags[3].key=cluster_name \
+          tags[3].value=${var.cluster_name} \
+          tags[4].key=env \
+          tags[4].value=${var.env}
       fi
     EOT
   }
