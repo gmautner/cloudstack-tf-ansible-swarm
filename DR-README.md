@@ -29,17 +29,39 @@ export AWS_SECRET_ACCESS_KEY="sua-aws-secret-access-key"
 
 Todas as variáveis acima são obrigatórias. Use a URL da API do seu provedor CloudStack (ex.: `https://painel-cloud.locaweb.com.br/client/api`).
 
-### Cluster ID
+### Cluster IDs (Origem e Destino)
 
-O cluster_id é **obrigatório** e deve ser **diferente** do cluster atual no Terraform. Isso garante que a recuperação seja feita a partir de um cluster criado do zero, evitando confusão entre snapshots do cluster antigo e do novo cluster limpo.
+- **Cluster de ORIGEM (antigo)**: É o cluster anterior (possivelmente já destruído) de onde vêm os snapshots.
+- **Cluster de DESTINO (novo/atual)**: É o cluster que receberá os dados recuperados. Crie o cluster novo pelo processo normal descrito no [README](README.md).
+
+O processo de DR sempre recupera dados do cluster de ORIGEM (antigo) para o cluster de DESTINO (novo). Esses IDs devem ser diferentes.
 
 ```bash
-# Para verificar o cluster ID atual no Terraform (para um ENV específico)
+# Identificar o cluster_id de DESTINO (novo/atual) para um ENV específico
 cd terraform
 terraform init -backend-config="key=env/<ENV>/terraform.tfstate"
 terraform output -raw cluster_id
 
 # Use um cluster_id DIFERENTE do retornado acima para a recuperação
+```
+
+#### Identificar o cluster_id de ORIGEM (antigo)
+
+Caso não saiba o cluster_id de ORIGEM (antigo), você pode obtê-lo pelas tags dos snapshots existentes.
+
+O comando abaixo retorna snapshots pelo nome do worker:
+
+```bash
+# Use o nome de algum worker do cluster (exemplo: mysql)
+cmk list snapshots tags[0].key=name tags[0].value=<worker_name> \
+  | jq '[.snapshot[]? | {id, name, created}] | sort_by(.created)'
+```
+
+E o comando abaixo retorna o cluster_id de ORIGEM (antigo) em função do ID do snapshot obtido acima:
+
+```bash
+cmk list tags resourceid=<snapshot_id> \
+  | jq -r '.tag[] | select(.key=="cluster_id") | .value'
 ```
 
 ## Instalação
@@ -95,13 +117,13 @@ Para instalar o CloudMonkey, siga as instruções abaixo:
 ### Sintaxe Básica
 
 ```bash
-./dr.sh -c SOURCE_CLUSTER_ID -e ENV [OPÇÕES]
+./dr.sh -c <cluster_id_origem> -e <env> [OPÇÕES]
 ```
 
 ### Opções Disponíveis
 
-- `-c, --cluster-id SOURCE_ID` - ID do cluster de origem (snapshots) (**OBRIGATÓRIO**)
-- `-e, --env ENVIRONMENT` - Ambiente de destino (dev, prod, etc.) (**OBRIGATÓRIO**)
+- `-c, --cluster-id` - ID do cluster de origem (antigo, snapshots) (**OBRIGATÓRIO**)
+- `-e, --env` - Ambiente de destino (dev, prod, etc.) (**OBRIGATÓRIO**)
 - `-d, --dry-run` - Executar em modo teste (mostra comandos sem executar)
 - `-h, --help` - Exibir ajuda
 
@@ -136,7 +158,7 @@ O script executa os seguintes passos automaticamente:
 - Confirma presença de ferramentas requeridas (`jq`, `terraform`, `cmk`)
 - Valida diretório do Terraform
 - Valida o ambiente fornecido (`-e`): diretório `environments/<env>` e arquivo `environments/<env>/terraform.tfvars`
-- Valida que o `cluster_id` de origem é diferente do cluster atual (destino) no Terraform
+- Valida que o `cluster_id de origem` é diferente do `cluster_id de destino` (obtido do Terraform para o ENV)
 
 ### 2. Verificação do CloudMonkey
 
@@ -164,7 +186,7 @@ O script executa os seguintes passos automaticamente:
 Para cada worker:
 
 - Lista snapshots pela tag de nome do worker (`name=<worker_name>`)
-- Filtra snapshots pelo `cluster_id` de origem
+- Filtra snapshots pelo `cluster_id de origem`
 - Ordena por data de criação e seleciona o mais recente
 - Cria um novo volume a partir do snapshot e o anexa à VM do worker
 
@@ -189,23 +211,25 @@ O script produz logs coloridos para facilitar o acompanhamento:
 ### Exemplo de Saída
 
 ```text
-[INFO] Starting disaster recovery for cluster: cluster-1-z1msjfjd
-[INFO] Checking dependencies...
-[SUCCESS] Dependencies check passed
-[INFO] Validating provided cluster_id...
-[SUCCESS] Cluster_id validated: cluster-1-z1msjfjd (different from current: cluster-2-abc123)
-[INFO] CloudMonkey is already installed
-[INFO] Configuring CloudMonkey...
-[SUCCESS] CloudMonkey configured successfully
-[INFO] Retrieving VMs for cluster: cluster-1-z1msjfjd
-[SUCCESS] Found VMs: i-123-456-VM i-789-012-VM
+[INFO] Iniciando recuperação de desastre para o cluster: cluster-old-xyz123
+[WARNING] MODO SIMULAÇÃO - Nenhuma alteração real será feita
+[INFO] Verificando dependências...
+[SUCCESS] Verificação de dependências aprovada
+[INFO] Verificando CloudMonkey...
+[SUCCESS] CloudMonkey encontrado
+[INFO] Configurando CloudMonkey...
+[SUCCESS] CloudMonkey configurado com sucesso
+[INFO] Cluster de destino (novo): cluster-new-abc123
+[INFO] Cluster de origem (recuperação): cluster-old-xyz123
+[INFO] Obtendo VMs do cluster de destino: cluster-new-abc123
+[SUCCESS] VMs do cluster de destino encontradas: i-123-456-VM i-789-012-VM
 ...
-[SUCCESS] Disaster recovery completed successfully!
+[SUCCESS] Recuperação de desastre concluída com sucesso!
 
-Next steps:
-  1. Run 'make plan ENV=<env>' to review changes
-  2. Run 'make deploy ENV=<env>' to apply tags to new worker disks
-  3. Verify your applications are running correctly
+Próximos passos:
+  1. Execute 'make plan ENV=<env>' para revisar as mudanças
+  2. Execute 'make deploy ENV=<env>' para aplicar tags aos novos discos dos workers
+  3. Verifique se suas aplicações estão funcionando corretamente
 ```
 
 ## Pós-Recuperação
@@ -233,16 +257,6 @@ Confirme a aplicação das tags nos novos discos de dados.
 ```bash
 # Recomendado: conectar via Makefile (usuário root; porta padrão 22001)
 make ssh ENV=<env> [PORT=22001]
-```
-
-```bash
-# Alternativa manual
-cd terraform
-terraform init -backend-config="key=env/<env>/terraform.tfstate"
-eval $(ssh-agent -s)
-terraform output -raw private_key | ssh-add -
-MANAGER_IP=$(terraform output -raw main_public_ip)
-ssh -o StrictHostKeyChecking=no -p 22001 root@$MANAGER_IP
 ```
 
 ```bash
@@ -305,9 +319,10 @@ docker service logs <nome-do-servico>
 
 **Solução**:
 
-- Forneça um cluster_id usando a opção `-c` ou `--cluster-id`
-- O cluster_id deve ser diferente do cluster atual no Terraform
-- Teste manualmente: `cd terraform && terraform output cluster_id` para ver o cluster atual
+- Forneça o `cluster_id de origem` usando a opção `-c` ou `--cluster-id`
+- Esse ID deve ser diferente do `cluster_id de destino` obtido do Terraform para o ENV
+- Para o `cluster_id de destino`: `cd terraform && terraform init -backend-config="key=env/<env>/terraform.tfstate" && terraform output -raw cluster_id`
+- Para o `cluster_id de origem` a partir de snapshots: veja a seção "Identificar o cluster_id de ORIGEM (antigo)"
 
 #### 5. VMs do Cluster Não Encontradas
 
@@ -353,51 +368,8 @@ bash -x ./dr.sh --dry-run
 
 Se o script falhar, você pode executar os comandos manualmente seguindo o processo descrito neste guia (seções "Processo de Recuperação" e "Pós-Recuperação").
 
-## Alterações na Implementação
-
-### Versão Atual
-
-- **Cluster ID Obrigatório**: O script agora exige que o cluster_id seja fornecido explicitamente e seja diferente do cluster atual no Terraform. Isso garante que a recuperação seja feita a partir de um cluster criado do zero, evitando confusão entre snapshots.
-- **Validação de Cluster**: O script valida automaticamente que o cluster_id fornecido é diferente do cluster atual antes de prosseguir com a recuperação.
-- **Script Unificado**: Todas as funcionalidades foram consolidadas no script principal `dr.sh`, removendo a necessidade de scripts auxiliares separados.
-- **Ambiente Obrigatório (-e)**: Agora é obrigatório informar o `ENV` (ex.: dev, prod). O script valida a existência de `environments/<env>` e do arquivo `terraform.tfvars` correspondente.
-- **Credenciais AWS**: São necessárias (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`) para inicializar o backend S3 do Terraform por ambiente.
-- **Filtragem de Snapshots**: Snapshots são filtrados pelo nome do worker (tag `name`) e pelo `cluster_id` de origem, e o mais recente é utilizado.
-- **Atualização de Estado do Terraform**: O backend é inicializado com `-backend-config="key=env/<env>/terraform.tfstate"` e o estado é atualizado com `terraform state rm` e `terraform import` usando `-var-file` e `-var="env=<env>"`.
-- **Reinício de VMs ao Final**: Todas as VMs são reiniciadas após a recuperação e reimportação de discos.
-- **Próximos Passos com Make**: Após a execução, utilize `make plan ENV=<env>` e `make deploy ENV=<env>`.
-
-## Segurança e Boas Práticas
-
-### Proteção de Credenciais
-
-- **Nunca** commite as credenciais no controle de versão
-- Use variáveis de ambiente ou arquivos de configuração seguros
-- Considere usar ferramentas como `pass` ou `gpg` para armazenar credenciais
-
-### Teste Regular
-
-- Execute o script em modo `--dry-run` regularmente para verificar sua funcionalidade
-- Teste o processo de recuperação em ambiente de desenvolvimento
-- Mantenha documentação atualizada sobre mudanças na infraestrutura
-
-### Backup das Credenciais
-
-- Mantenha backup seguro das chaves de API
-- Documente onde as credenciais estão armazenadas
-- Implemente rotação regular das chaves de API
-
 ## Limitações Conhecidas
 
 1. **Downtime**: O processo requer parada temporária das VMs
 2. **Snapshots**: Depende da disponibilidade de snapshots recentes
 3. **Ordem de Recuperação**: Workers são recuperados sequencialmente
-4. **Estado do Terraform**: Requer sincronização manual do estado
-
-## Contato e Suporte
-
-Para problemas ou dúvidas sobre este processo de recuperação:
-
-1. Verifique os logs do script para mensagens de erro específicas
-2. Consulte a documentação do CloudStack
-3. Revise este guia para detalhes técnicos dos comandos
