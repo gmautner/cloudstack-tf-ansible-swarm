@@ -1,78 +1,78 @@
 # Disaster Recovery Guide
 
-Este guia documenta o procedimento de recuperação de desastres para o cluster Docker Swarm no CloudStack.
+This guide documents the disaster recovery procedure for the Docker Swarm cluster on CloudStack.
 
-## Visão Geral
+## Overview
 
-O script de recuperação de desastres (`dr.sh`) automatiza o processo de restauração dos discos de dados dos workers a partir de snapshots armazenados no CloudStack. Este processo é necessário quando os discos de dados dos workers são corrompidos ou perdidos.
+The disaster recovery script (`dr.sh`) automates restoring worker data disks from snapshots stored in CloudStack. This is necessary when worker data disks are lost or corrupted.
 
-## Pré-requisitos
+## Prerequisites
 
-### Software Necessário
+### Required Software
 
-- **bash** (shell script)
-- **jq** - Para processamento de JSON
-- **terraform** - Para gerenciamento de estado
-- **CloudMonkey (cmk)** - Cliente de linha de comando do CloudStack
+- **bash** (shell)
+- **jq** - JSON processing
+- **terraform** - State and infrastructure management
+- **CloudMonkey (cmk)** - CloudStack command-line client
 
-### Credenciais de Ambiente
+### Environment Credentials
 
-Antes de executar o script, defina as seguintes variáveis de ambiente:
+Before running the script, export the following environment variables:
 
 ```bash
-export CLOUDSTACK_API_KEY="sua-api-key"
-export CLOUDSTACK_SECRET_KEY="sua-secret-key"
-export CLOUDSTACK_API_URL="https://painel-cloud.locaweb.com.br/client/api"  # Obrigatório
-export AWS_ACCESS_KEY_ID="sua-aws-access-key-id"
-export AWS_SECRET_ACCESS_KEY="sua-aws-secret-access-key"
+export CLOUDSTACK_API_KEY="your-api-key"
+export CLOUDSTACK_SECRET_KEY="your-secret-key"
+export CLOUDSTACK_API_URL="https://painel-cloud.locaweb.com.br/client/api"  # Required
+export AWS_ACCESS_KEY_ID="your-aws-access-key-id"
+export AWS_SECRET_ACCESS_KEY="your-aws-secret-access-key"
 ```
 
-Todas as variáveis acima são obrigatórias. Use a URL da API do seu provedor CloudStack (ex.: `https://painel-cloud.locaweb.com.br/client/api`).
+All variables above are required. Use your CloudStack provider's API URL (e.g., `https://painel-cloud.locaweb.com.br/client/api`).
 
-### Cluster IDs (Origem e Destino)
+### Cluster IDs (Source and Destination)
 
-- **Cluster de ORIGEM (antigo)**: É o cluster anterior (possivelmente já destruído) de onde vêm os snapshots.
-- **Cluster de DESTINO (novo/atual)**: É o cluster que receberá os dados recuperados. Crie o cluster novo pelo processo normal descrito no [README](README.md).
+- **Source cluster (old)**: The previous cluster (possibly already destroyed) from which snapshots are taken.
+- **Destination cluster (new/current)**: The cluster that will receive the recovered data. Create the new cluster using the standard process described in the [README](README.md).
 
-O processo de DR sempre recupera dados do cluster de ORIGEM (antigo) para o cluster de DESTINO (novo). Esses IDs devem ser diferentes.
+The DR process always restores data from the SOURCE (old) cluster to the DESTINATION (new) cluster. These IDs must be different.
 
 ```bash
-# Identificar o cluster_id de DESTINO (novo/atual) para um ENV específico
+# Identify the DESTINATION (new/current) cluster_id for a specific ENV
 cd terraform
 terraform init -backend-config="key=env/<ENV>/terraform.tfstate"
 terraform output -raw cluster_id
 
-# Use um cluster_id DIFERENTE do retornado acima para a recuperação
+# Use a DIFFERENT cluster_id than the one returned above for recovery
 ```
 
-#### Identificar o cluster_id de ORIGEM (antigo)
+#### Identify the SOURCE (old) cluster_id
 
-Caso não saiba o cluster_id de ORIGEM (antigo), você pode obtê-lo pelas tags dos snapshots existentes.
+If you don't know the SOURCE (old) cluster_id, you can get it from existing snapshot tags.
 
-O comando abaixo retorna snapshots pelo nome do worker:
+The command below lists snapshots by worker name:
 
 ```bash
-# Use o nome de algum worker do cluster (exemplo: mysql)
+# Use the name of a worker in the cluster (example: mysql)
 cmk list snapshots tags[0].key=name tags[0].value=<worker_name> \
   | jq '[.snapshot[]? | {id, name, created}] | sort_by(.created)'
 ```
 
-E o comando abaixo retorna o cluster_id de ORIGEM (antigo) em função do ID do snapshot obtido acima:
+And the command below returns the SOURCE (old) cluster_id for the snapshot ID obtained above:
 
 ```bash
 cmk list tags resourceid=<snapshot_id> \
   | jq -r '.tag[] | select(.key=="cluster_id") | .value'
 ```
 
-## Instalação
+## Installation
 
-1. Torne o script executável:
+1. Make the script executable:
 
 ```bash
 chmod +x dr.sh
 ```
 
-1. Verifique se as dependências estão instaladas:
+1. Verify dependencies are installed:
 
 ```bash
 # Ubuntu/Debian
@@ -83,293 +83,293 @@ sudo apt install jq
 sudo yum install jq
 ```
 
-### Instalação do CloudMonkey
+### CloudMonkey installation
 
-Para instalar o CloudMonkey, siga as instruções abaixo:
+To install CloudMonkey, follow these steps:
 
-1. **Acesse o repositório oficial**: [https://github.com/apache/cloudstack-cloudmonkey/releases](https://github.com/apache/cloudstack-cloudmonkey/releases)
+1. **Open the official releases page**: [https://github.com/apache/cloudstack-cloudmonkey/releases](https://github.com/apache/cloudstack-cloudmonkey/releases)
 
-2. **Baixe a versão apropriada** para seu sistema operacional:
+2. **Download the appropriate build** for your OS:
    - Linux x86-64: `cmk.linux.x86-64`
    - Linux ARM64: `cmk.linux.arm64`
    - macOS x86-64: `cmk.darwin.x86-64`
    - macOS ARM64: `cmk.darwin.arm64`
    - Windows: `cmk.windows.x86-64.exe`
 
-3. **Instale o binário**:
+3. **Install the binary**:
 
    ```bash
-   # Baixar (exemplo para Linux x86-64)
+   # Download (example for Linux x86-64)
    wget https://github.com/apache/cloudstack-cloudmonkey/releases/latest/download/cmk.linux.x86-64
    
-   # Tornar executável
+   # Make executable
    chmod +x cmk.linux.x86-64
    
-   # Mover para diretório no PATH
+   # Move into PATH
    sudo mv cmk.linux.x86-64 /usr/local/bin/cmk
    
-   # Verificar instalação
+   # Verify installation
    cmk version
    ```
 
-## Uso
+## Usage
 
-### Sintaxe Básica
+### Basic syntax
 
 ```bash
-./dr.sh -c <cluster_id_origem> -e <env> [OPÇÕES]
+./dr.sh -c <source_cluster_id> -e <env> [OPTIONS]
 ```
 
-### Opções Disponíveis
+### Available options
 
-- `-c, --cluster-id` - ID do cluster de origem (antigo, snapshots) (**OBRIGATÓRIO**)
-- `-e, --env` - Ambiente de destino (dev, prod, etc.) (**OBRIGATÓRIO**)
-- `-d, --dry-run` - Executar em modo teste (mostra comandos sem executar)
-- `-h, --help` - Exibir ajuda
+- `-c, --cluster-id` - Source (old, snapshots) cluster ID (**REQUIRED**)
+- `-e, --env` - Destination environment (dev, prod, etc.) (**REQUIRED**)
+- `-d, --dry-run` - Run in dry-run mode (show commands without executing)
+- `-h, --help` - Show help
 
-### Exemplos de Uso
+### Usage examples
 
-#### Recuperação Normal
+#### Normal recovery
 
 ```bash
-# Recuperar dados do cluster ANTIGO para o ambiente dev
+# Recover data from the OLD cluster into the dev environment
 ./dr.sh -c cluster-old-xyz123 -e dev
 
-# Recuperar dados do cluster ANTIGO para o ambiente prod
+# Recover data from the OLD cluster into the prod environment
 ./dr.sh -c cluster-old-xyz123 -e prod
 ```
 
-#### Modo Teste (Dry Run)
+#### Dry run
 
 ```bash
-# Executar em modo teste (sem alterações) para o ambiente dev
+# Run in dry-run mode (no changes) targeting the dev environment
 ./dr.sh -c cluster-old-xyz123 -e dev --dry-run
 ```
 
-**Recomendação**: Sempre execute primeiro em modo `--dry-run` para verificar se tudo está correto antes da execução real.
+**Recommendation**: Always run with `--dry-run` first to verify everything is correct before a real run.
 
-## Processo de Recuperação
+## Recovery process
 
-O script executa os seguintes passos automaticamente:
+The script performs the following steps automatically:
 
-### 1. Verificação de Dependências
+### 1. Dependency checks
 
-- Verifica variáveis de ambiente necessárias (`CLOUDSTACK_API_KEY`, `CLOUDSTACK_SECRET_KEY`, `CLOUDSTACK_API_URL`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`)
-- Confirma presença de ferramentas requeridas (`jq`, `terraform`, `cmk`)
-- Valida diretório do Terraform
-- Valida o ambiente fornecido (`-e`): diretório `environments/<env>` e arquivo `environments/<env>/terraform.tfvars`
-- Valida que o `cluster_id de origem` é diferente do `cluster_id de destino` (obtido do Terraform para o ENV)
+- Validates required environment variables (`CLOUDSTACK_API_KEY`, `CLOUDSTACK_SECRET_KEY`, `CLOUDSTACK_API_URL`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`)
+- Confirms presence of required tools (`jq`, `terraform`, `cmk`)
+- Validates the Terraform directory
+- Validates the provided environment (`-e`): `environments/<env>` directory and `environments/<env>/terraform.tfvars` file
+- Validates that the `source cluster_id` is different from the `destination cluster_id` (queried from Terraform for the ENV)
 
-### 2. Verificação do CloudMonkey
+### 2. CloudMonkey verification
 
-- Verifica se o CloudMonkey está instalado e disponível no PATH
-- Exibe instruções de instalação se não encontrado
+- Checks that CloudMonkey is installed and available on PATH
+- Shows installation instructions if not found
 
-### 3. Configuração do CloudMonkey
+### 3. CloudMonkey configuration
 
-- Configura URL da API do CloudStack
-- Define chaves de API
-- Testa conectividade
+- Configures the CloudStack API URL
+- Sets API keys
+- Tests connectivity
 
-### 4. Parada das VMs
+### 4. Stop VMs
 
-- Identifica todas as VMs do cluster
-- Para as VMs de forma controlada
+- Identifies all cluster VMs
+- Stops the VMs gracefully
 
-### 5. Desanexação dos Discos
+### 5. Detach disks
 
-- Localiza discos de dados dos workers
-- Desanexa os discos das VMs
+- Locates worker data disks
+- Detaches the disks from the VMs
 
-### 6. Recuperação a partir de Snapshots
+### 6. Restore from snapshots
 
-Para cada worker:
+For each worker:
 
-- Lista snapshots pela tag de nome do worker (`name=<worker_name>`)
-- Filtra snapshots pelo `cluster_id de origem`
-- Ordena por data de criação e seleciona o mais recente
-- Cria um novo volume a partir do snapshot e o anexa à VM do worker
+- Lists snapshots using the worker name tag (`name=<worker_name>`)
+- Filters snapshots by the `source cluster_id`
+- Sorts by creation date and selects the most recent
+- Creates a new volume from the snapshot and attaches it to the worker VM
 
-### 7. Atualização do Estado do Terraform
+### 7. Update Terraform state
 
-- Inicializa o Terraform com backend S3 específico do `ENV`
-- Remove referências antigas dos discos no estado do Terraform (`terraform state rm 'cloudstack_disk.worker_data["<worker_name>"]'`)
-- Importa os novos discos para o estado (`terraform import ...`) usando `-var-file=../environments/<env>/terraform.tfvars -var="env=<env>"`
-- Mantém consistência entre infraestrutura e código; as VMs são reiniciadas no final do processo
+- Initializes Terraform with the S3 backend for the given `ENV`
+- Removes old disk references from Terraform state (`terraform state rm 'cloudstack_disk.worker_data["<worker_name>"]'`)
+- Imports the new disks into state (`terraform import ...`) using `-var-file=../environments/<env>/terraform.tfvars -var="env=<env>"`
+- Keeps infrastructure and code in sync; VMs are restarted at the end of the process
 
-## Saída do Script
+## Script output
 
-### Logs Informativos
+### Informational logs
 
-O script produz logs coloridos para facilitar o acompanhamento:
+The script prints colorized logs to make it easy to follow:
 
-- **[INFO]** (azul) - Informações gerais
-- **[SUCCESS]** (verde) - Operações bem-sucedidas
-- **[WARNING]** (amarelo) - Avisos e modo dry-run
-- **[ERROR]** (vermelho) - Erros que requerem atenção
+- **[INFO]** (blue) - General information
+- **[SUCCESS]** (green) - Successful operations
+- **[WARNING]** (yellow) - Warnings and dry-run mode
+- **[ERROR]** (red) - Errors requiring attention
 
-### Exemplo de Saída
+### Example output
 
 ```text
-[INFO] Iniciando recuperação de desastre para o cluster: cluster-old-xyz123
-[WARNING] MODO SIMULAÇÃO - Nenhuma alteração real será feita
-[INFO] Verificando dependências...
-[SUCCESS] Verificação de dependências aprovada
-[INFO] Verificando CloudMonkey...
-[SUCCESS] CloudMonkey encontrado
-[INFO] Configurando CloudMonkey...
-[SUCCESS] CloudMonkey configurado com sucesso
-[INFO] Cluster de destino (novo): cluster-new-abc123
-[INFO] Cluster de origem (recuperação): cluster-old-xyz123
-[INFO] Obtendo VMs do cluster de destino: cluster-new-abc123
-[SUCCESS] VMs do cluster de destino encontradas: i-123-456-VM i-789-012-VM
+[INFO] Starting disaster recovery for cluster: cluster-old-xyz123
+[WARNING] DRY-RUN MODE - No real changes will be made
+[INFO] Checking dependencies...
+[SUCCESS] Dependency checks passed
+[INFO] Checking CloudMonkey...
+[SUCCESS] CloudMonkey found
+[INFO] Configuring CloudMonkey...
+[SUCCESS] CloudMonkey configured successfully
+[INFO] Destination (new) cluster: cluster-new-abc123
+[INFO] Source (recovery) cluster: cluster-old-xyz123
+[INFO] Getting VMs for destination cluster: cluster-new-abc123
+[SUCCESS] Destination cluster VMs found: i-123-456-VM i-789-012-VM
 ...
-[SUCCESS] Recuperação de desastre concluída com sucesso!
+[SUCCESS] Disaster recovery completed successfully!
 
-Próximos passos:
-  1. Execute 'make plan ENV=<env>' para revisar as mudanças
-  2. Execute 'make deploy ENV=<env>' para aplicar tags aos novos discos dos workers
-  3. Verifique se suas aplicações estão funcionando corretamente
+Next steps:
+  1. Run 'make plan ENV=<env>' to review changes
+  2. Run 'make deploy ENV=<env>' to apply tags to the new worker data disks
+  3. Verify your applications are healthy
 ```
 
-## Pós-Recuperação
+## Post-recovery
 
-Após a execução bem-sucedida do script:
+After the script completes successfully:
 
-### 1. Validação do Terraform
+### 1. Validate Terraform
 
 ```bash
 make plan ENV=<env>
 ```
 
-Verifique se as mudanças mostradas estão corretas (principalmente tags nos novos discos).
+Confirm that the shown changes are correct (especially tags on the new disks).
 
-### 2. Aplicação das Mudanças
+### 2. Apply changes
 
 ```bash
 make deploy ENV=<env>
 ```
 
-Confirme a aplicação das tags nos novos discos de dados.
+Confirm applying tags to the new worker data disks.
 
-### 3. Verificação dos Serviços
+### 3. Verify services
 
 ```bash
-# Recomendado: conectar via Makefile (usuário root; porta padrão 22001)
+# Recommended: connect via Makefile (root user; default port 22001)
 make ssh ENV=<env> [PORT=22001]
 ```
 
 ```bash
-# Dentro do manager, verifique o Swarm e serviços
+# On the manager, check Swarm and services
 docker node ls
 docker service ls
-docker service logs <nome-do-servico>
+docker service logs <service-name>
 ```
 
-### 4. Teste das Aplicações
+### 4. Test applications
 
-- Acesse a aplicação, por exemplo: `https://portal.seudominio.com`
-- Acesse o Traefik Dashboard: `https://traefik.seudominio.com`
-- Verifique se os dados foram restaurados corretamente
+- Access the application, e.g., `https://portal.yourdomain.com`
+- Access Traefik Dashboard: `https://traefik.yourdomain.com`
+- Verify that data was restored correctly
 
-## Solução de Problemas
+## Troubleshooting
 
-### Erros Comuns
+### Common errors
 
-#### 1. CloudMonkey Não Instalado
+#### 1. CloudMonkey not installed
 
 ```text
-[ERROR] CloudMonkey (cmk) é necessário mas não está instalado.
+[ERROR] CloudMonkey (cmk) is required but not installed.
 ```
 
-**Solução**:
+**Solution**:
 
-- Instale o CloudMonkey seguindo as instruções em [https://github.com/apache/cloudstack-cloudmonkey/releases](https://github.com/apache/cloudstack-cloudmonkey/releases)
-- Certifique-se de que o binário `cmk` está no PATH
+- Install CloudMonkey following the instructions at [https://github.com/apache/cloudstack-cloudmonkey/releases](https://github.com/apache/cloudstack-cloudmonkey/releases)
+- Ensure the `cmk` binary is on PATH
 
-#### 2. Credenciais Inválidas
+#### 2. Invalid credentials
 
 ```text
-[ERROR] Variável de ambiente CLOUDSTACK_API_KEY é obrigatória
-[ERROR] Variável de ambiente CLOUDSTACK_SECRET_KEY é obrigatória
-[ERROR] Variável de ambiente CLOUDSTACK_API_URL é obrigatória
-[ERROR] Variável de ambiente AWS_ACCESS_KEY_ID é obrigatória para acesso ao backend S3
-[ERROR] Variável de ambiente AWS_SECRET_ACCESS_KEY é obrigatória para acesso ao backend S3
+[ERROR] CLOUDSTACK_API_KEY environment variable is required
+[ERROR] CLOUDSTACK_SECRET_KEY environment variable is required
+[ERROR] CLOUDSTACK_API_URL environment variable is required
+[ERROR] AWS_ACCESS_KEY_ID environment variable is required for the S3 backend
+[ERROR] AWS_SECRET_ACCESS_KEY environment variable is required for the S3 backend
 ```
 
-**Solução**: Defina as variáveis de ambiente corretas (CloudStack e AWS) antes de executar o script.
+**Solution**: Export the correct environment variables (CloudStack and AWS) before running the script.
 
-#### 3. Ambiente Inválido
+#### 3. Invalid environment
 
 ```text
-[ERROR] Diretório do ambiente não encontrado: environments/<env>
-[ERROR] Arquivo terraform.tfvars não encontrado: environments/<env>/terraform.tfvars
+[ERROR] Environment directory not found: environments/<env>
+[ERROR] terraform.tfvars file not found: environments/<env>/terraform.tfvars
 ```
 
-**Solução**:
+**Solution**:
 
-- Crie o diretório do ambiente em `environments/<env>`
-- Forneça o arquivo `environments/<env>/terraform.tfvars` com as variáveis necessárias
+- Create the environment directory under `environments/<env>`
+- Provide the `environments/<env>/terraform.tfvars` file with the required variables
 
-#### 4. Cluster ID Obrigatório
+#### 4. Cluster ID required
 
 ```text
-[ERROR] O cluster_id é obrigatório para recuperação de desastre
+[ERROR] The cluster_id is required for disaster recovery
 ```
 
-**Solução**:
+**Solution**:
 
-- Forneça o `cluster_id de origem` usando a opção `-c` ou `--cluster-id`
-- Esse ID deve ser diferente do `cluster_id de destino` obtido do Terraform para o ENV
-- Para o `cluster_id de destino`: `cd terraform && terraform init -backend-config="key=env/<env>/terraform.tfstate" && terraform output -raw cluster_id`
-- Para o `cluster_id de origem` a partir de snapshots: veja a seção "Identificar o cluster_id de ORIGEM (antigo)"
+- Provide the `source cluster_id` using `-c` or `--cluster-id`
+- This ID must be different from the `destination cluster_id` obtained from Terraform for the ENV
+- For the `destination cluster_id`: `cd terraform && terraform init -backend-config="key=env/<env>/terraform.tfstate" && terraform output -raw cluster_id`
+- For the `source cluster_id` from snapshots: see the section "Identify the SOURCE (old) cluster_id"
 
-#### 5. VMs do Cluster Não Encontradas
+#### 5. Cluster VMs not found
 
 ```text
-[ERROR] Nenhuma VM encontrada para o cluster: cluster-1-xyz
+[ERROR] No VMs found for cluster: cluster-1-xyz
 ```
 
-**Solução**:
+**Solution**:
 
-- Verifique se o cluster ID está correto
-- Confirme que as VMs têm as tags apropriadas
-- Se especificou um cluster ID manualmente, verifique se está correto
+- Verify the cluster ID is correct
+- Confirm VMs have the appropriate tags
+- If you specified a cluster ID manually, verify it is correct
 
-#### 6. Snapshots Não Encontrados
+#### 6. Snapshots not found
 
 ```text
-[ERROR] Nenhum snapshot encontrado para o worker: mysql
+[ERROR] No snapshot found for worker: mysql
 ```
 
-**Solução**: Verifique se os snapshots estão sendo criados automaticamente e se as tags estão corretas.
+**Solution**: Verify snapshots are being created automatically and that tags are correct.
 
-#### 7. Problemas de Conectividade
+#### 7. Connectivity issues
 
 ```text
-[ERROR] Testando conexão com CloudStack falhou
+[ERROR] Testing connectivity to CloudStack failed
 ```
 
-**Solução**:
+**Solution**:
 
-- Verifique conectividade de rede
-- Confirme se as credenciais são válidas
-- Teste manualmente: `cmk list zones`
+- Check network connectivity
+- Confirm credentials are valid
+- Test manually: `cmk list zones`
 
-### Logs Detalhados
+### Detailed logs
 
-Para depuração adicional, execute com verbose:
+For additional debugging, run with verbose:
 
 ```bash
 bash -x ./dr.sh --dry-run
 ```
 
-### Recuperação Manual
+### Manual recovery
 
-Se o script falhar, você pode executar os comandos manualmente seguindo o processo descrito neste guia (seções "Processo de Recuperação" e "Pós-Recuperação").
+If the script fails, you can run the commands manually following the process described in this guide (sections "Recovery process" and "Post-recovery").
 
-## Limitações Conhecidas
+## Known limitations
 
-1. **Downtime**: O processo requer parada temporária das VMs
-2. **Snapshots**: Depende da disponibilidade de snapshots recentes
-3. **Ordem de Recuperação**: Workers são recuperados sequencialmente
+1. **Downtime**: VMs need to be stopped temporarily
+2. **Snapshots**: Depends on the availability of recent snapshots
+3. **Recovery order**: Workers are restored sequentially
