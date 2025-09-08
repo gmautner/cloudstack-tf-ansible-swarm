@@ -239,6 +239,10 @@ If a pool label is used, like in the constraint `node.labels.pool == myapp`, add
 ...
 ```
 
+> Reference: See [Locaweb Cloud plans](https://www.locaweb.com.br/locaweb-cloud/) for vCPU and RAM for each plan.
+>
+> Note: `data_size_gb` configures only an additional attached volume for data; it is not the root disk.
+
 #### Set Infrastructure Credentials (Local)
 
 For local deployments, provide your infrastructure credentials as environment variables. Application secrets should be placed in the `secrets.yaml` file as described above.

@@ -237,6 +237,10 @@ Se um rótulo de pool for usado, como na restrição `node.labels.pool == myapp`
 ...
 ```
 
+> Referência: veja os [planos da Locaweb Cloud](https://www.locaweb.com.br/locaweb-cloud/) para tamanhos de vCPU e RAM de cada plano.
+>
+> Observação: `data_size_gb` configura apenas um volume adicional anexado para dados; não é o disco root.
+
 #### Definir Credenciais de Infraestrutura (Local)
 
 Para deploys locais, forneça suas credenciais de infraestrutura como variáveis de ambiente. Os segredos de aplicação devem ser colocados no arquivo `secrets.yaml` conforme descrito acima.
