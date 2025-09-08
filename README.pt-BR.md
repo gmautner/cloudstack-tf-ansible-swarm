@@ -167,7 +167,7 @@ cp -r environments/example/stacks/wordpress-mysql environments/dev/stacks/
 cp -r environments/example/stacks/nextcloud-postgres-redis environments/dev/stacks/
 ```
 
-**Adaptando ou criando arquivos Docker Compose para Docker Swarm**: Se precisar adaptar arquivos Docker Compose para uso no Docker Swarm, ou criar novos do zero, consulte o [Guia de Docker Compose](DOCKER-COMPOSE-GUIDE.pt-BR.md) para instruções detalhadas. (🧠 **Dica de IA**: Aponte seu assistente de IA para este guia para expertise instantânea em Docker Swarm!)
+**Criando ou adaptando arquivos Docker Compose para Docker Swarm**: Se precisar criar arquivos Docker Compose para uso no Docker Swarm, ou adaptar arquivos existentes, consulte o [Guia de Docker Compose](DOCKER-COMPOSE-GUIDE.pt-BR.md) para instruções detalhadas. (🧠 **Dica de IA**: Aponte seu assistente de IA para este guia para expertise instantânea em Docker Swarm!)
 
 #### Definir Segredos de Aplicação
 
