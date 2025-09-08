@@ -8,6 +8,16 @@ The rules are based on the following reference: [docs/Compose file reference (le
 
 Always check whether the stack is compatible with the above reference and fix it if it is not.
 
+## Examples
+
+The [environments/example/stacks/](environments/example/stacks/) directory contains examples of Docker Compose files for use with Docker Swarm.
+
+Some illustrative examples are:
+
+- [environments/example/stacks/nextcloud-postgres-redis/docker-compose.yml](environments/example/stacks/nextcloud-postgres-redis/docker-compose.yml): typical app stack with volumes, secrets and databases.
+
+- [environments/example/stacks/minio/docker-compose.yml](environments/example/stacks/minio/docker-compose.yml): typical stack with infrastructure services.
+
 ## Rules
 
 ### Header

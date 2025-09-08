@@ -8,6 +8,16 @@ As regras são baseadas na seguinte referência: [docs/Compose file reference (l
 
 Sempre verifique se o stack é compatível com a referência acima e corrija-o caso não seja.
 
+## Exemplos
+
+O diretório [environments/example/stacks/](environments/example/stacks/) contém exemplos de arquivos Docker Compose para uso com Docker Swarm.
+
+Alguns exemplos ilustrativos são:
+
+- [environments/example/stacks/nextcloud-postgres-redis/docker-compose.yml](environments/example/stacks/nextcloud-postgres-redis/docker-compose.yml): stack típico de aplicação com volumes, segredos e bancos de dados.
+
+- [environments/example/stacks/minio/docker-compose.yml](environments/example/stacks/minio/docker-compose.yml): stack típico com serviços de infraestrutura.
+
 ## Regras
 
 ### Cabeçalho
@@ -168,5 +178,3 @@ services:
         export MONGO_URL="mongodb://rocketchat:$$(cat /run/secrets/mongodb_password)@mongo1:27017,mongo2:27017,mongo3:27017/rocketchat?authSource=admin&replicaSet=rs0"
         exec node main.js
 ```
-
-
