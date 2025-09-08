@@ -87,7 +87,7 @@ resource "null_resource" "worker_snapshot_policies" {
           tags[3].key=cluster_name \
           tags[3].value=${var.cluster_name} \
           tags[4].key=env \
-          tags[4].value=${var.env}
+          tags[4].value=${var.env} > /dev/null
       fi
     EOT
   }
@@ -115,7 +115,7 @@ resource "null_resource" "worker_snapshot_policies" {
           tags[3].key=cluster_name \
           tags[3].value=${var.cluster_name} \
           tags[4].key=env \
-          tags[4].value=${var.env}
+          tags[4].value=${var.env} > /dev/null
       fi
     EOT
   }
@@ -143,7 +143,7 @@ resource "null_resource" "worker_snapshot_policies" {
           tags[3].key=cluster_name \
           tags[3].value=${var.cluster_name} \
           tags[4].key=env \
-          tags[4].value=${var.env}
+          tags[4].value=${var.env} > /dev/null
       fi
     EOT
   }
@@ -171,7 +171,7 @@ resource "null_resource" "worker_snapshot_policies" {
           tags[3].key=cluster_name \
           tags[3].value=${var.cluster_name} \
           tags[4].key=env \
-          tags[4].value=${var.env}
+          tags[4].value=${var.env} > /dev/null
       fi
     EOT
   }
