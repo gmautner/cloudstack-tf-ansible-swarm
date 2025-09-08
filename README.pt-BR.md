@@ -375,4 +375,3 @@ Localmente (fora do CI/CD), você pode usar os seguintes comandos:
 - `make ssh ENV=prod PORT=22010`: SSH no nó com porta `22010` do ambiente `prod` (veja o `environments/prod/inventory.yml` gerado para o mapeamento entre portas e nós).
 
 > ⚠️ **Importante**: Tenha cuidado ao usar comandos locais `make deploy` e pipelines de CI/CD ao mesmo tempo. Como as variáveis e segredos são passados de fontes diferentes, você terá resultados distintos se eles não forem iguais.
-
