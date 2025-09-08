@@ -199,7 +199,7 @@ MYSQL_ROOT_PASSWORD: "your-password"  # ✗ Wrong
 MySQL_root_Password: "your-password"  # ✗ Wrong
 ```
 
-**Example file:** `environments/example/secrets.yaml.example`
+**Example file:** [environments/example/secrets.yaml.example](environments/example/secrets.yaml.example)
 
 #### Define workers
 
