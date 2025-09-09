@@ -328,7 +328,9 @@ public_ips = {
 
 #### Set Infrastructure Credentials (Local)
 
-For local deployments, provide your infrastructure credentials as environment variables. Application secrets should be placed in the `secrets.yaml` file as described above.
+For local deployments, provide your infrastructure credentials as environment variables.
+
+> 💡 **Remark**: Unlike infrastructure credentials, application secrets should be placed in the `secrets.yaml` file as described above.
 
 - **Locally**: Export infrastructure credentials as environment variables.
 

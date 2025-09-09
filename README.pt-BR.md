@@ -326,7 +326,9 @@ public_ips = {
 
 #### Definir Credenciais de Infraestrutura (Local)
 
-Para deploys locais, forneça suas credenciais de infraestrutura como variáveis de ambiente. Os segredos de aplicação devem ser colocados no arquivo `secrets.yaml` conforme descrito acima.
+Para deploys locais, forneça suas credenciais de infraestrutura como variáveis de ambiente.
+
+> 💡 **Lembrete**: Diferentemente das credenciais de infraestrutura, os segredos de aplicação devem ser colocados no arquivo `secrets.yaml` conforme descrito acima.
 
 - **Localmente**: Exporte as credenciais de infraestrutura como variáveis de ambiente.
 
