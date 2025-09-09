@@ -429,7 +429,7 @@ Go to **Settings > Secrets and variables > Actions** and add the infrastructure 
 
 #### Add Environment-Specific Secrets
 
-For each environment you created, add the application-specific secrets defined in your `docker-compose.yml` files (e.g., `mysql_root_password`, `nextcloud_admin_password`, etc.)
+**For each environment** created in GitHub, add the application-specific secrets defined in your `docker-compose.yml` files (e.g., `mysql_root_password`, `nextcloud_admin_password`, etc.). Remember also to add, in each environment, the base application secrets (Traefik and monitoring).
 
 > 💡 **Remark**: GitHub will automatically convert secret names to uppercase in the UI, but the deployment process will convert them back to lowercase to match your `secrets.yaml` format. For example, if you define `mysql_root_password` in your stack, GitHub will display it as `MYSQL_ROOT_PASSWORD`, but it will be correctly applied as `mysql_root_password` during deployment.
 

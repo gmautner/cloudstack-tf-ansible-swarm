@@ -427,7 +427,7 @@ Vá em **Settings > Secrets and variables > Actions** e adicione as credenciais 
 
 #### Adicionar Segredos Específicos por Ambiente
 
-Para cada ambiente criado, adicione os segredos específicos da aplicação definidos nos seus arquivos `docker-compose.yml` (por exemplo, `mysql_root_password`, `nextcloud_admin_password`, etc.)
+**Para cada ambiente** criado no GitHub, adicione os segredos específicos da aplicação definidos nos seus arquivos `docker-compose.yml` (por exemplo, `mysql_root_password`, `nextcloud_admin_password`, etc.). Lembre-se de adicionar também, em cada ambiente, os segredos de aplicação base (Traefik e monitoramento).
 
 > 💡 **Observação**: O GitHub converte automaticamente os nomes dos segredos para maiúsculas na UI, mas o processo de deploy os converterá de volta para minúsculas para corresponder ao formato do `secrets.yaml`. Por exemplo, se você definir `mysql_root_password` no seu stack, o GitHub exibirá como `MYSQL_ROOT_PASSWORD`, mas ele será aplicado corretamente como `mysql_root_password` durante o deploy.
 
