@@ -22,9 +22,11 @@
       - [Define Application Stacks](#define-application-stacks)
       - [Define Application Secrets](#define-application-secrets)
       - [Define workers](#define-workers)
+      - [Configure Public IPs (Optional)](#configure-public-ips-optional)
+        - [Example: Exposing Portainer directly](#example-exposing-portainer-directly)
       - [Set Infrastructure Credentials (Local)](#set-infrastructure-credentials-local)
     - [Deploy](#deploy)
-    - [Configure DNS After Deployment](#configure-dns-after-deployment)
+    - [Configure DNS](#configure-dns)
   - [CI/CD with GitHub Actions](#cicd-with-github-actions)
     - [Configuration](#configuration)
       - [Create Environments](#create-environments)
@@ -83,7 +85,7 @@ This repository provides a template for deploying multiple, environment-specific
 - Ansible >= 2.10
 - CloudStack API Credentials
 - An AWS account
-- A [Slack webhook](https://docs.slack.dev/messaging/sending-messages-using-incoming-webhooks/) for receiving alerts
+- A [Slack webhook](https://docs.slack.dev/messaging/sending-messages-using-incoming-webhooks/) for receiving alerts (use the "app from scratch" option when following the link)
 - A DNS Zone that you can manage, for creating DNS records for your cluster, e.g. `infra.example.com`
 
 ### Fork this repository
@@ -142,7 +144,17 @@ Let's configure a new environment called `dev`.
 
 #### Customize Terraform Variables
 
-Copy `environments/example/terraform.tfvars` to `environments/dev/terraform.tfvars` and customize it with your settings, including a unique `cluster_name` and a `base_domain`.
+Create the environment directory and copy the terraform.tfvars file:
+
+```bash
+# Create the environment directory first
+mkdir -p environments/dev/
+
+# Copy and customize the terraform variables
+cp environments/example/terraform.tfvars environments/dev/terraform.tfvars
+```
+
+Then customize `environments/dev/terraform.tfvars` with your settings, including a unique `cluster_name` and a `base_domain` that you control for DNS management.
 
 #### Configure Backend
 
@@ -155,6 +167,9 @@ The `environments/dev/stacks/` directory determines which applications are deplo
 **Base Infrastructure Stacks (Required)**: Always copy the numbered stacks from `environments/example/stacks/` as they contain the essential base infrastructure for the cluster:
 
 ```bash
+# Create the stacks directory first
+mkdir -p environments/dev/stacks/
+
 # Copy base infrastructure stacks (required for cluster operation)
 cp -r environments/example/stacks/00-socket-proxy environments/dev/stacks/
 cp -r environments/example/stacks/01-traefik environments/dev/stacks/
@@ -173,19 +188,36 @@ cp -r environments/example/stacks/nextcloud-postgres-redis environments/dev/stac
 
 #### Define Application Secrets
 
-The secrets required by your application stacks are automatically discovered from the `secrets:` block at the top level of each `docker-compose.yml` file.
+The secrets required by your stacks are automatically discovered from the `secrets:` block at the top level of each `docker-compose.yml` file. This includes secrets needed by the base infrastructure stacks (Traefik and monitoring) as well as your application stacks.
 
-For local development, you must create an `environments/dev/secrets.yaml` file to provide the values for these secrets. This file is a simple key-value store. The file is ignored by Git, and the deployment playbook will fail if its permissions are not `600`.
+For local development, you must create an `environments/dev/secrets.yaml` file to provide the values for these secrets. This file is a simple key-value store and should be set with `chmod 600` permissions. The file is ignored by Git, and the deployment playbook will fail if the permissions are not correctly set.
+
+```bash
+# Set correct permissions for the secrets file
+chmod 600 environments/dev/secrets.yaml
+```
 
 > 💡 **Remark**: in CI/CD, the secrets are passed directly to the playbook as environment-level secrets, bypassing the need for the `secrets.yaml` file (see more in the [CI/CD section](#cicd-with-github-actions)).
+
+**Required secrets for base infrastructure stacks:**
+
+- `traefik_basicauth`: HTTP Basic Auth password for accessing Traefik dashboard and other protected services
+- `slack_api_url`: Slack webhook URL for receiving monitoring alerts
 
 **Example `environments/dev/secrets.yaml`:**
 
 ```yaml
+# Base infrastructure secrets (required)
+traefik_basicauth: 'admin:$2y$05$Oi938xgiKuRIORHWv1KuBuGASePs1DjtNV3pux86SgOj.7h47W66u'
+slack_api_url: "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX"
+
+# Application secrets (as needed for your stacks)
 mysql_root_password: "your-dev-db-password"
 wordpress_db_password: "your-dev-wp-password"
 ```
 
+> 💡 **Tip**: You can generate the `traefik_basicauth` value using: `htpasswd -nB admin`
+>
 > ⚠️ **Important**: Always define secret names in lowercase, both in your stacks and in the `secrets.yaml` file.
 
 **Correct naming:**
@@ -206,6 +238,28 @@ MySQL_root_Password: "your-password"  # ✗ Wrong
 #### Define workers
 
 Edit the `environments/dev/terraform.tfvars` file to provision infrastructure resources for the services defined in the `docker-compose.yml` stack files.
+
+**Base Infrastructure Workers**: Keep the `traefik` and `monitoring` workers from the example file, as they are required for the base infrastructure stacks you copied earlier. You can adjust the plan and data size based on your cluster's expected load:
+
+```hcl
+workers = {
+  # Workers for traefik stack (required)
+  "traefik" = {
+    plan         = "medium",    # Adjust based on traffic load
+    data_size_gb = 10
+  },
+
+  # Workers for monitoring stack (required)
+  "monitoring" = {
+    plan         = "large",     # Adjust based on metrics volume
+    data_size_gb = 100          # Adjust based on retention needs
+  },
+
+  # Add your application-specific workers below...
+}
+```
+
+**Application-Specific Workers**: Add additional workers based on your application stacks' requirements.
 
 For example, if the stack has the constraint `node.hostname == mongo1`, add the following to the `terraform.tfvars` file:
 
@@ -242,6 +296,35 @@ If a pool label is used, like in the constraint `node.labels.pool == myapp`, add
 > Reference: See [Locaweb Cloud plans](https://www.locaweb.com.br/locaweb-cloud/) for vCPU and RAM for each plan.
 >
 > Note: `data_size_gb` configures only an additional attached volume for data; it is not the root disk.
+
+#### Configure Public IPs (Optional)
+
+The `public_ips` variable in `terraform.tfvars` is used for exposing services directly to the internet with dedicated public IP addresses and load balancer rules. Since Traefik is included in the base infrastructure stacks, most services should be exposed through Traefik using domain names, which is the recommended approach.
+
+However, `public_ips` can be useful in specific situations where you need to:
+
+- Expose services that don't work well behind a reverse proxy
+- Provide direct access to services on non-standard ports
+- Bypass Traefik for performance or compatibility reasons
+
+##### Example: Exposing Portainer directly
+
+```hcl
+public_ips = {
+  portainer = {
+    ports = [
+      {
+        public        = 9443
+        private       = 9443
+        protocol      = "tcp"
+        allowed_cidrs = ["203.0.113.0/24"]  # Restrict access to your IP range
+      }
+    ]
+  }
+}
+```
+
+> 💡 **Recommendation**: Use Traefik for most services (accessible via `https://service-name.{domain_suffix}`) and only use `public_ips` when direct exposure is specifically needed.
 
 #### Set Infrastructure Credentials (Local)
 
@@ -291,37 +374,24 @@ make deploy ENV=prod
 
 This command will automatically use the correct S3 state file path and configuration files for the specified environment.
 
-### Configure DNS After Deployment
+### Configure DNS
 
-After your Terraform deployment completes successfully, you'll need to configure DNS records to make your services accessible. Terraform will output the necessary information:
+During deployment, you'll need to configure DNS records to make your services accessible. The `make deploy` command will output the necessary DNS configuration information:
 
-```bash
-# View the deployment instructions
-terraform output deployment_instructions
+```text
+📋 REQUIRED DNS CONFIGURATION:
 
-# Or get specific values
-terraform output traefik_ip
-terraform output domain_suffix
+   Create a DNS A record for: *.dev.mycluster.company.tech
+   Point it to Traefik IP: 1.1.1.1
+
+   Example DNS record:
+   *.dev.mycluster.company.tech  →  1.1.1.1
 ```
-
-**Required DNS Configuration:**
-
-**Create a wildcard DNS A record** for your environment:
-
-- **Record Type**: A
-- **Name**: `*.{domain_suffix}` (e.g., `*.dev.cluster-1.infra.example.com`)
-- **Value**: The Traefik IP address from the terraform output
-
-- **Example DNS record:**
-
-  ```text
-  *.dev.cluster-1.infra.example.com  →  203.0.113.45
-  ```
 
 Once DNS is configured, your services will be accessible at:
 
 - **Traefik Dashboard**: `https://traefik.{domain_suffix}`
-- **Grafana Dashboard**: `https://grafana.{domain_suffix}`
+- **Grafana Dashboard**: `https://grafana.{domain_suffix}` (⚠️ Change the default password from "admin" on first access)
 - **Prometheus**: `https://prometheus.{domain_suffix}`
 - **Alertmanager**: `https://alertmanager.{domain_suffix}`
 - **Other services**: `https://{service-name}.{domain_suffix}`
