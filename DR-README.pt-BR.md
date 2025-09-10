@@ -32,7 +32,17 @@ Todas as variáveis acima são obrigatórias. Use a URL da API do seu provedor C
 ### Cluster IDs (Origem e Destino)
 
 - **Cluster de ORIGEM (antigo)**: É o cluster anterior (possivelmente já destruído) de onde vêm os snapshots.
-- **Cluster de DESTINO (novo/atual)**: É o cluster que receberá os dados recuperados. Crie o cluster novo pelo processo normal descrito no [README.pt-BR.md](README.pt-BR.md).
+- **Cluster de DESTINO (novo/atual)**: É o cluster que receberá os dados recuperados. Deve ser criado em um estado limpo do Terraform que não contenha o cluster de ORIGEM.
+
+>⚠️ **Importante**: Se o cluster de ORIGEM ainda estiver presente no estado do Terraform (para o mesmo ambiente/backend), você não poderá criar o cluster de DESTINO nesse mesmo estado usando o processo normal. Escolha **uma** das seguintes opções:
+
+- Destrua o cluster de ORIGEM primeiro nesse estado do Terraform.
+- Crie o cluster de DESTINO em um ambiente diferente (ex.: `dev-dr` ou `prod-dr`). Cada ambiente usa seu próprio estado isolado.
+- Mantenha o mesmo nome de ambiente, mas altere o bucket do backend S3 no arquivo `terraform/backend.tf` para que o cluster de DESTINO utilize um estado isolado.
+
+Detalhes da opção 3 (backend alternativo mantendo o mesmo nome de ENV):
+
+- Edite `terraform/backend.tf` e defina um `bucket` S3 diferente (e `region` se necessário), seguindo as instruções na seção [Configurar o Backend](README.pt-BR.md#configurar-o-backend) do README.
 
 O processo de DR sempre recupera dados do cluster de ORIGEM (antigo) para o cluster de DESTINO (novo). Esses IDs devem ser diferentes.
 
@@ -373,5 +383,3 @@ Se o script falhar, você pode executar os comandos manualmente seguindo o proce
 1. **Downtime**: O processo requer parada temporária das VMs
 2. **Snapshots**: Depende da disponibilidade de snapshots recentes
 3. **Ordem de Recuperação**: Workers são recuperados sequencialmente
-
-

@@ -32,7 +32,17 @@ All variables above are required. Use your CloudStack provider's API URL (e.g., 
 ### Cluster IDs (Source and Destination)
 
 - **Source cluster (old)**: The previous cluster (possibly already destroyed) from which snapshots are taken.
-- **Destination cluster (new/current)**: The cluster that will receive the recovered data. Create the new cluster using the standard process described in the [README](README.md).
+- **Destination cluster (new/current)**: The cluster that will receive the recovered data. It must be created in a clean Terraform state that does not already contain the SOURCE cluster.
+
+>⚠️ **Important**: If the SOURCE cluster is still present in Terraform state (for the same environment/backend), you cannot create the DESTINATION cluster in that same state using the standard process. Choose **one** of the following options:
+
+- Destroy the SOURCE cluster first in that Terraform state.
+- Create the DESTINATION cluster in a different environment (e.g., `dev-dr` or `prod-dr`). Each environment uses its own isolated state.
+- Keep the same environment name, but reinitialize Terraform to use a different S3 backend (different bucket and/or a different key/prefix) so the DESTINATION cluster uses an isolated state.
+
+Option 3 details (alternate backend while keeping the same ENV name):
+
+- Edit `terraform/backend.tf` and set a different S3 `bucket` (and `region` if needed), following the instructions in the [Configure Backend](README.md#configure-backend) section of the README.
 
 The DR process always restores data from the SOURCE (old) cluster to the DESTINATION (new) cluster. These IDs must be different.
 
