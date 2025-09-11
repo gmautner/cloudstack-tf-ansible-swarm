@@ -42,6 +42,14 @@ locals {
 
 
 resource "null_resource" "initialize_cloudmonkey" {
+  depends_on = [
+    cloudstack_disk.worker_data
+  ]
+
+  triggers = {
+    volume_id = cloudstack_disk.worker_data[each.key].id
+  }
+
   provisioner "local-exec" {
     command = <<-EOT
       cmk set url $CLOUDSTACK_API_URL && \
