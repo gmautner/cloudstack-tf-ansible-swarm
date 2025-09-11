@@ -155,10 +155,6 @@
         enabled: true
         daemon_reload: true
 
-    - name: Calculate available memory for each host
-      set_fact:
-        available_memory_mb: "{{ ((ansible_memtotal_mb * 0.9) | int) - 300 }}"
-
   handlers:
     - name: restart docker
       systemd:
