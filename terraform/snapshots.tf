@@ -47,7 +47,8 @@ resource "null_resource" "initialize_cloudmonkey" {
   ]
 
   triggers = {
-    worker_data = cloudstack_disk.worker_data
+    # Re-run when any worker volume id changes or worker set changes
+    volume_ids = join(",", [for k in keys(var.workers) : cloudstack_disk.worker_data[k].id])
   }
 
   provisioner "local-exec" {
