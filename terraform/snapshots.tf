@@ -47,7 +47,7 @@ resource "null_resource" "initialize_cloudmonkey" {
   ]
 
   triggers = {
-    volume_id = cloudstack_disk.worker_data[each.key].id
+    worker_data = cloudstack_disk.worker_data
   }
 
   provisioner "local-exec" {
