@@ -34,6 +34,7 @@
       - [Add Environment-Specific Secrets](#add-environment-specific-secrets)
     - [Running the Workflow](#running-the-workflow)
   - [Example Makefile Commands](#example-makefile-commands)
+  - [Deleting a Stack](#deleting-a-stack)
 
 This repository provides a template for deploying multiple, environment-specific Docker Swarm clusters on CloudStack using Terraform and Ansible.
 
@@ -453,3 +454,18 @@ Locally (not in CI/CD), you can use the following Makefile commands:
 - `make ssh ENV=prod PORT=22010`: SSH into the node with port `22010` of the `prod` environment (see the generated `environments/prod/inventory.yml` for mapping between ports and nodes).
 
 > ⚠️ **Important**: Be careful when using local `make deploy` commands and CI/CD pipelines at the same time. Since the variables and secrets are passed from different sources, you will get different results if they aren't equal.
+
+## Deleting a Stack
+
+The Ansible playbook will not automatically delete a stack if you only remove its directory. To delete a stack safely:
+
+1. Edit the stack's `docker-compose.yml` to the minimal form below:
+
+   ```yaml
+   version: '3.8'
+   services: {}
+   ```
+
+2. Run a deployment to apply the change (locally with `make deploy` or via the GitHub CI/CD workflow). This removes the services and the stack from the Swarm.
+
+3. After it has been applied, delete the stack directory and remove any related workers from `environments/<env>/terraform.tfvars`, then run a new deployment (locally with `make deploy` or via the GitHub CI/CD workflow) to reconcile infrastructure.

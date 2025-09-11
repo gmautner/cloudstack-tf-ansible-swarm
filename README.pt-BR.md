@@ -32,6 +32,7 @@
       - [Adicionar Segredos Específicos por Ambiente](#adicionar-segredos-específicos-por-ambiente)
     - [Executando o Workflow](#executando-o-workflow)
   - [Exemplos de Comandos do Makefile](#exemplos-de-comandos-do-makefile)
+  - [Excluindo um Stack](#excluindo-um-stack)
 
 Este repositório fornece um template para implantar múltiplos clusters Docker Swarm específicos por ambiente no CloudStack usando Terraform e Ansible.
 
@@ -451,3 +452,18 @@ Localmente (fora do CI/CD), você pode usar os seguintes comandos:
 - `make ssh ENV=prod PORT=22010`: SSH no nó com porta `22010` do ambiente `prod` (veja o `environments/prod/inventory.yml` gerado para o mapeamento entre portas e nós).
 
 > ⚠️ **Importante**: Tenha cuidado ao usar comandos locais `make deploy` e pipelines de CI/CD ao mesmo tempo. Como as variáveis e segredos são passados de fontes diferentes, você terá resultados distintos se eles não forem iguais.
+
+## Excluindo um Stack
+
+O playbook do Ansible não excluirá automaticamente um stack se você apenas remover seu diretório. Para excluir um stack com segurança:
+
+1. Edite o `docker-compose.yml` do stack para a forma mínima abaixo:
+
+   ```yaml
+   version: '3.8'
+   services: {}
+   ```
+
+2. Execute um deploy para aplicar a alteração (localmente com `make deploy` ou via o workflow de CI/CD do GitHub). Isso removerá os serviços e o stack do Swarm.
+
+3. Depois de aplicado, exclua o diretório do stack e remova quaisquer workers relacionados de `environments/<env>/terraform.tfvars`, em seguida execute um novo deploy (localmente com `make deploy` ou via o workflow de CI/CD do GitHub) para reconciliar a infraestrutura.
