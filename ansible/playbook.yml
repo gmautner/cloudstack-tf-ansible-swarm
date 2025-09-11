@@ -38,7 +38,7 @@
         state: directory
       when: data_disk.stat.exists
 
-    # FIX enquanto houver problema GRUB
+    # FIX problema GRUB com apt upgrade e referência ao root disk device
     - name: Detect the root disk device
       shell: |
         lsblk -J -o NAME,MOUNTPOINT | jq -r '
@@ -198,12 +198,6 @@
   hosts: workers
   become: true
   tasks:
-    # Temporary workaround to fix existing swarm state that has hardcoded IP addresses
-    # - name: Force leave swarm
-    #   community.docker.docker_swarm:
-    #     state: absent
-    #     force: true
-
     - name: Join as worker
       community.docker.docker_swarm:
         state: join
