@@ -38,6 +38,10 @@ resource "cloudstack_instance" "managers" {
     cluster_id   = local.cluster_id
     env          = var.env
   }
+
+  lifecycle {
+    ignore_changes = [template]
+  }
 }
 
 # Data disks for managers (50GB each)
@@ -74,6 +78,10 @@ resource "cloudstack_instance" "workers" {
     cluster_name = var.cluster_name
     cluster_id   = local.cluster_id
     env          = var.env
+  }
+
+  lifecycle {
+    ignore_changes = [template]
   }
 }
 
