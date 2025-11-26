@@ -105,6 +105,7 @@ Este template usa um bucket S3 para armazenar o estado do Terraform.
 
 - Acesse o serviço IAM.
 - Crie um novo usuário. Dê um nome descritivo (ex.: `terraform-s3-backend-user`).
+- Desabilite o acesso ao AWS Management Console.
 - Em "Permissões", selecione **Anexar políticas diretamente** e clique em **Criar política**.
 
 #### Criar e Anexar a Política IAM
